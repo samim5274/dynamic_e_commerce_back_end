@@ -108,7 +108,7 @@ class AuthController extends Controller
         $remember = (bool)($credentials['remember'] ?? false);
         $user->setRememberToken($remember ? Str::random(60) : null);
         $user->saveQuietly();
-        
+
         UpdateLastLoginJob::dispatch($user->id, $request->ip());
 
         $remember = (bool)($credentials['remember'] ?? false);

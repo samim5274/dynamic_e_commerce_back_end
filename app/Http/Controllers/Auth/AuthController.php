@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use App\Jobs\UpdateLastLoginJob;
 
 use App\Models\User;
 use App\Mail\OTPMail;
@@ -99,20 +100,20 @@ class AuthController extends Controller
         RateLimiter::clear($ipKey);
 
         // Optional: update last login data (add columns if needed)
-        $user->forceFill([
-            'last_login_at' => now(),
-            'last_login_ip' => $request->ip(),
-        ])->save();
+        // $user->forceFill([
+        //     'last_login_at' => now(),
+        //     'last_login_ip' => $request->ip(),
+        // ])->save();
 
         $remember = (bool)($credentials['remember'] ?? false);
+        $user->setRememberToken($remember ? Str::random(60) : null);
+        $user->saveQuietly();
+        
+        UpdateLastLoginJob::dispatch($user->id, $request->ip());
 
-        if ($remember) {
-            $user->setRememberToken(Str::random(60));
-            $user->save();
-        } else {
-            $user->setRememberToken(null);
-            $user->save();
-        }
+        $remember = (bool)($credentials['remember'] ?? false);
+        $user->setRememberToken($remember ? Str::random(60) : null);
+        $user->saveQuietly(); // avoid events & slow triggers
 
         // Optional: revoke old tokens (single-device login)
         // $user->tokens()->delete();

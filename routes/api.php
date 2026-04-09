@@ -19,6 +19,15 @@ Route::prefix('auth')->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('auth')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+        Route::post('/logout-device', [AuthController::class, 'logoutDevice']);
+        Route::get('/devices', [AuthController::class, 'devices']);
+    });
+});
+
 
 // ======================
 // Profile Routes

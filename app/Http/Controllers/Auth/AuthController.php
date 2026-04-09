@@ -130,14 +130,6 @@ class AuthController extends Controller
         ], 200);
     }
 
-    // Logout
-    public function logout(Request $request)
-    {
-        $request->user()->currentAccessToken()->delete();
-
-        return response()->json(['message' => 'Logged out']);
-    }
-
     public function findAccount(Request $request)
     {
         $request->validate([
@@ -237,5 +229,52 @@ class AuthController extends Controller
                 'line' => $e->getLine()
             ], 500);
         }
+    }
+
+    // Logout Section
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json([
+            'message' => 'Logged out successfully (current device).'
+        ], 200);
+    }
+
+    public function logoutAll(Request $request)
+    {
+        $request->user()->tokens()->delete();
+        return response()->json([
+            'message' => 'Logged out from all devices.'
+        ], 200);
+    }
+
+    public function logoutDevice(Request $request)
+    {
+        $request->validate([
+            'token_id' => 'required|exists:personal_access_tokens,id'
+        ]);
+        $request->user()->tokens()
+            ->where('id', $request->token_id)
+            ->delete();
+
+        return response()->json([
+            'message' => 'Device logged out successfully.'
+        ]);
+    }
+
+    public function devices(Request $request)
+    {
+        $tokens = $request->user()->tokens->map(function ($token) {
+            return [
+                'id' => $token->id,
+                'device' => $token->name,
+                'last_used_at' => $token->last_used_at,
+                'created_at' => $token->created_at,
+            ];
+        });
+
+        return response()->json([
+            'devices' => $tokens
+        ]);
     }
 }

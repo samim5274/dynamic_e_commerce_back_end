@@ -81,4 +81,10 @@ class User extends Authenticatable
         return $this->hasMany(User::class, 'refer_id');
     }
 
+    // Point relation
+    public function user()
+    {
+        return $this->hasMany(PointTransaction::class);
+    }
+
 }

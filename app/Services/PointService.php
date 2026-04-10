@@ -82,7 +82,7 @@ class PointService
             'bonus_status' => 'deposit',
             'source' => 'matching',
             'reference_id' => $user->id,
-            'note' => 'matching bonus from user ID - ' . $user->id,
+            'note' => 'Matching bonus for user ID - ' . $user->id,
         ]);
 
         $user->decrement('left_count', $pairs);

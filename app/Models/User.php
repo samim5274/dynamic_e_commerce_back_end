@@ -19,7 +19,7 @@ class User extends Authenticatable
         'dob', 'gender', 'blood_group', 'national_id', 'religion',
         'present_address', 'permanent_address', 'photo', 'wallet_balance',
         'refer_id','is_match','points','rank',
-        'parent_id', 'left_child_id', 'right_child_id'
+        'parent_id', 'left_child_id', 'right_child_id', 'left_count', 'right_count'
     ];
 
     protected $hidden = [
@@ -83,7 +83,7 @@ class User extends Authenticatable
     }
 
     // Point relation
-    public function user()
+    public function pointTransactions()
     {
         return $this->hasMany(PointTransaction::class);
     }

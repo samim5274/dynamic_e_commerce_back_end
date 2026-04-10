@@ -10,6 +10,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\User;
+use App\Services\PointService;
 
 class CustomerController extends Controller
 {
@@ -155,7 +156,7 @@ class CustomerController extends Controller
         return $ids;
     }
 
-    public function createUser(Request $request)
+    public function createUser(Request $request, PointService $pointService)
     {
         // Validate input
         $data = $request->validate([
@@ -216,7 +217,7 @@ class CustomerController extends Controller
         // After create user then assign in tree
         $userId = $user->id;
         $userRootId = $data['root_user_id'];
-        $position = $data['position'];
+
 
         // prevent self assignment
         if ($userId == $userRootId) {
@@ -227,7 +228,9 @@ class CustomerController extends Controller
         }
 
         try{
-            DB::transaction(function () use ($data, $userId, $userRootId) {
+            DB::transaction(function () use ($data, $userId, $userRootId, $pointService) {
+
+                $position = $data['position'];
 
                 $user = User::where('id', $userId)->lockForUpdate()->firstOrFail();
                 $rootUser = User::where('id', $userRootId)->lockForUpdate()->firstOrFail();
@@ -262,6 +265,10 @@ class CustomerController extends Controller
                 // save both
                 $user->save();
                 $rootUser->save();
+
+                // MLM logic
+                $pointService->referralBonus($user);
+                $pointService->updateCounts($user);
 
             });
 

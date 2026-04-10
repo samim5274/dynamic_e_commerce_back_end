@@ -34,22 +34,22 @@ return new class extends Migration
 
             $table->boolean('is_active')->default(true);
             $table->boolean('is_profile_completed')->default(false);
-            
+
             // Addresses
             $table->text('present_address')->nullable();
             $table->text('permanent_address')->nullable();
-            
+
             // Verification
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('phone_verified_at')->nullable();
             $table->string('otp', 10)->nullable();
             $table->timestamp('otp_expires_at')->nullable();
-            
+
             // Login info
             $table->timestamp('last_login_at')->nullable();
             $table->ipAddress('last_login_ip')->nullable();
             $table->rememberToken();
-            
+
             // Wallet / credits for customers
             $table->decimal('wallet_balance', 12, 2)->default(0); // for refunds, credits, etc.
 
@@ -62,6 +62,8 @@ return new class extends Migration
             $table->foreignId('parent_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('left_child_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('right_child_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->integer('left_count')->default(0);
+            $table->integer('right_count')->default(0);
 
             // Security / tokens
             $table->string('tokens', 255)->nullable();

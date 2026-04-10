@@ -15,8 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
 
-            $table->enum('type', ['earn', 'spend', 'bonus', 'penalty']);
+            $table->enum('type', ['earn', 'spend', 'bonus', 'matching'])->default('earn');
             $table->integer('points');
+
+            $table->decimal('bonus_amount', 15, 2)->default(0);
+            $table->enum('bonus_status', ['deposit', 'withdrawal'])->nullable();
 
             $table->string('source')->nullable(); // order, referral, admin
             $table->unsignedBigInteger('reference_id')->nullable();

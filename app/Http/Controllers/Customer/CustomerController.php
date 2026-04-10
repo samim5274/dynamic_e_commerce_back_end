@@ -103,9 +103,15 @@ class CustomerController extends Controller
     public function getUsers(Request $request){
         try {
             $authUser = $request->user();
+
+            $underIds = $this->getAllUnderUserIds($authUser->id);
+
+            // include my id also
+            $allIds = array_merge([$authUser->id], $underIds);
+
             $users = User::with(['referrer', 'leftChild', 'rightChild'])
                     ->where('is_match', 0)
-                    ->where('refer_id', $authUser->id)
+                    ->whereIn('id', $allIds)
                     ->latest()
                     ->get();
 
@@ -114,13 +120,39 @@ class CustomerController extends Controller
                 'message' => 'Fetched all admin users',
                 'data' => $users,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Something went wrong',
-                'error' => $e->getMessage(),
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
+    }
+
+    private function getAllUnderUserIds($userId)
+    {
+        $ids = [];
+        $queue = [$userId];
+
+        while (!empty($queue)) {
+            $currentIds = $queue;
+
+            // get all children in one query
+            $children = User::whereIn('refer_id', $currentIds)
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($children)) {
+                break;
+            }
+
+            $ids = array_merge($ids, $children);
+
+            // next loop
+            $queue = $children;
+        }
+
+        return $ids;
     }
 
     public function createUser(Request $request)

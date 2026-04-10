@@ -31,6 +31,7 @@ class User extends Authenticatable
     {
         static::creating(function ($user) {
             if (empty($user->password)) {
+                // $user->password = Hash::make('password');
                 $user->password = Hash::make(bin2hex(random_bytes(4)));
             }
 

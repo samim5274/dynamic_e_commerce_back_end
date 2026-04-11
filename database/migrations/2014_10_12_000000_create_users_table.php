@@ -55,13 +55,18 @@ return new class extends Migration
 
             $table->foreignId('refer_id')->nullable()->constrained('users')->onDelete('set null');
             $table->boolean('is_match')->default(false);
-            $table->integer('points')->default(0);
             $table->string('rank')->nullable();
 
             // Tree structure
             $table->foreignId('parent_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('left_child_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('right_child_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->integer('total_match')->default(0);
+            $table->integer('own_match')->default(0);
+
+            $table->integer('left_match')->default(0);
+            $table->integer('right_match')->default(0);
+
             $table->integer('left_count')->default(0);
             $table->integer('right_count')->default(0);
 

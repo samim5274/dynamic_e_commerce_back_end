@@ -18,8 +18,8 @@ class User extends Authenticatable
         'name', 'email', 'user_id', 'phone', 'password', 'role',
         'dob', 'gender', 'blood_group', 'national_id', 'religion',
         'present_address', 'permanent_address', 'photo', 'wallet_balance',
-        'refer_id','is_match','points','rank',
-        'parent_id', 'left_child_id', 'right_child_id', 'left_count', 'right_count'
+        'refer_id','is_match','rank',
+        'parent_id', 'left_child_id', 'right_child_id', 'left_count', 'right_count', 'left_match', 'right_match', 'total_match', 'own_match'
     ];
 
     protected $hidden = [
@@ -51,6 +51,11 @@ class User extends Authenticatable
         'wallet_balance' => 'decimal:2',
         'dob' => 'date',
     ];
+
+    public function getTotalMatchAttribute()
+    {
+        return $this->own_match + $this->left_match + $this->right_match;
+    }
 
     // Parent node
     public function parentUser()

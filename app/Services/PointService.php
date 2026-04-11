@@ -13,7 +13,7 @@ class PointService
         // start from direct referrer (A)
         $parent = $user->parentUser;
 
-        // if (!$parent) return;
+        if (!$parent) return;
 
         while ($parent) {
 
@@ -38,8 +38,15 @@ class PointService
         }
     }
 
-    // 2. Update Binary Count
+    // 2. Update Count
     public function updateCounts($user)
+    {
+        $this->updateUpLineCounts($user);
+        $this->checkMatching($user);
+    }
+
+    // 3. Update Up lines Count
+    public function updateUpLineCounts($user)
     {
         $parent = $user->parentUser;
         $current = $user;
@@ -47,14 +54,12 @@ class PointService
         while ($parent) {
 
             if ($current->id == $parent->left_child_id) {
-                $parent->increment('left_count');
+                $parent->increment('left_count', 1);
             }
 
-            if ($current->id === $parent->right_child_id) {
-                $parent->increment('right_count');
+            if ($current->id == $parent->right_child_id) {
+                $parent->increment('right_count', 1);
             }
-
-            $parent->refresh();
 
             $this->checkMatching($parent);
 
@@ -63,7 +68,7 @@ class PointService
         }
     }
 
-    // 3. Matching Bonus
+    // 4. Check matching
     public function checkMatching($user)
     {
         $user->refresh();
@@ -82,10 +87,38 @@ class PointService
             'bonus_status' => 'deposit',
             'source' => 'matching',
             'reference_id' => $user->id,
-            'note' => 'Matching bonus for user ID - ' . $user->id,
         ]);
 
+        // own match
+        $user->increment('own_match', $pairs);
+
+        // reduce matched counts
         $user->decrement('left_count', $pairs);
         $user->decrement('right_count', $pairs);
+
+        // propagate SAME pairs to up lines
+        $this->propagateMatch($user, $pairs);
     }
+
+    // 5. Propagation Match
+    public function propagateMatch($user, $pairs)
+    {
+        $parent = $user->parentUser;
+        $current = $user;
+
+        while ($parent) {
+
+            if ($current->id == $parent->left_child_id) {
+                $parent->increment('left_match', $pairs);
+            }
+
+            if ($current->id == $parent->right_child_id) {
+                $parent->increment('right_match', $pairs);
+            }
+
+            $current = $parent;
+            $parent = $parent->parentUser;
+        }
+    }
+
 }

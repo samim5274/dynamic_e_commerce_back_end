@@ -38,6 +38,7 @@ class UserSeeder extends Seeder
                 'phone' => '01711111112',
                 'password' => Hash::make('password'),
                 'role' => 'admin',
+                'refer_id' => 1,
                 'parent_id' => $root->id,
             ]
         );

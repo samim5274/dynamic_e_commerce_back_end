@@ -11,16 +11,15 @@ class PointService
     public function referralBonus($user, $points = 100)
     {
         // start from direct referrer (A)
-        $parent = $user->parentUser;
-
-        if (!$parent) return;
+        $parent = $user->referrer;
 
         while ($parent) {
 
             // prevent duplicate
             $exists = PointTransaction::where('user_id', $parent->id)
-                ->where('source', 'referral')->where('reference_id', $user->id)->exists();
-
+                ->where('source', 'referral')
+                ->where('reference_id', $user->id)
+                ->exists();
 
             if(!$exists){
                 PointTransaction::create([
@@ -34,7 +33,7 @@ class PointService
             }
 
             // move up chain
-            $parent = $parent->parentUser;
+            $parent = $parent->referrer;
         }
     }
 

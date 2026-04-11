@@ -116,23 +116,23 @@ class PointService
             }
 
             // ADD MATCHING BONUS TRANSACTION FOR EACH UP LINE
-            $exists = PointTransaction::where('user_id', $parent->id)
-                ->where('source', 'matching_propagation')
-                ->where('reference_id', $user->id)
-                ->exists();
+            // $exists = PointTransaction::where('user_id', $parent->id)
+            //     ->where('source', 'matching_propagation')
+            //     ->where('reference_id', $user->id)
+            //     ->exists();
 
-            if (!$exists) {
-                PointTransaction::create([
-                    'user_id' => $parent->id,
-                    'type' => 'matching',
-                    'points' => 0,
-                    'bonus_amount' => $pairs * 100,
-                    'bonus_status' => 'deposit',
-                    'source' => 'matching_propagation',
-                    'reference_id' => $user->id,
-                    'note' => 'Matching bonus propagated from user ID - ' . $user->id,
-                ]);
-            }
+            // if (!$exists) {
+            //     PointTransaction::create([
+            //         'user_id' => $parent->id,
+            //         'type' => 'matching',
+            //         'points' => 0,
+            //         'bonus_amount' => $pairs * 100,
+            //         'bonus_status' => 'deposit',
+            //         'source' => 'matching_propagation',
+            //         'reference_id' => $user->id,
+            //         'note' => 'Matching bonus propagated from user ID - ' . $user->id,
+            //     ]);
+            // }
 
             $current = $parent;
             $parent = $parent->parentUser;

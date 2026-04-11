@@ -46,6 +46,9 @@ return new class extends Migration
             $table->text('meta_description')->nullable();
             $table->string('meta_keywords')->nullable();
 
+            $table->integer('sv')->default(0);
+            $table->integer('point')->default(0);
+
             $table->timestamps();
 
             $table->index(['approval_status', 'is_active']);

@@ -31,7 +31,7 @@ class ProductSeeder extends Seeder
             return;
         }
 
-        for ($i = 1; $i <= 50; $i++) {
+        for ($i = 1; $i <= 500; $i++) {
             $category = $categories->random();
             $subcategory = $subcategories->where('category_id', $category->id)->random();
             $brand = $brands->random();
@@ -55,6 +55,8 @@ class ProductSeeder extends Seeder
                 'meta_title'       => $name,
                 'meta_keywords'    => "sample, product, {$i}",
                 'meta_description' => "Meta description for {$name}",
+                'sv'               => rand(10,1000),
+                'point'            => rand(10,1000),
                 'is_featured'      => rand(0,1),
                 'is_on_sale'       => rand(0,1),
                 'is_active'        => 1,

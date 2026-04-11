@@ -57,8 +57,7 @@ use App\Http\Controllers\Product\ProductController;
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('products')->group(function () {
         Route::post('/create', [ProductController::class, 'store']);
-        // get routes
-        Route::get('/', [ProductController::class, 'index']);
+
 
         Route::get('/get-categories', [ProductController::class, 'getCategory']);
         Route::get('/get-subcategories', [ProductController::class, 'getSubCategory']);
@@ -92,4 +91,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/assign-tree', [CustomerController::class, 'assignTree']);
         });
     });
+});
+
+// ======================
+// E-commerce Routes
+// ======================
+use App\Http\Controllers\Ecommerce\EcommerceProductController;
+Route::prefix('public')->group(function () {
+    Route::get('/products', [EcommerceProductController::class, 'index']);
+
+    Route::get('/get-categories', [ProductController::class, 'getCategory']);
+    Route::get('/get-subcategories', [ProductController::class, 'getSubCategory']);
+    Route::get('/get-brands', [ProductController::class, 'getBrand']);
+    Route::get('/{slug}', [ProductController::class, 'show'])->where('slug', '[a-zA-Z0-9\-]+');
 });

@@ -15,11 +15,21 @@ class ProductCategorySeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            'Men Fashion',
-            'Women Fashion',
-            'Electronics',
-            'Home & Living',
-            'Beauty & Health',
+            'Medicines',
+            'Medical Devices',
+            'Health Care Equipment',
+            'Personal Care',
+            'Baby Care',
+            'Diabetic Care',
+            'Heart & Blood Pressure',
+            'Vitamins & Supplements',
+            'Sexual Wellness',
+            'First Aid',
+            'Lab Test & Diagnostics',
+            'Elderly Care',
+            'Orthopedic Care',
+            'Covid & Safety',
+            'Herbal & Ayurvedic',
         ];
 
         foreach ($categories as $key => $cat) {

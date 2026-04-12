@@ -29,6 +29,7 @@ class EcommerceProductController extends Controller
                     'category:id,name',
                     'subcategory:id,name',
                     'brand:id,name',
+                    'images:id,product_id,image_path,is_primary'
                 ])
                 ->latest()
                 ->get()

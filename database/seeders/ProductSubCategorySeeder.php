@@ -16,11 +16,103 @@ class ProductSubCategorySeeder extends Seeder
     public function run(): void
     {
         $data = [
-            'Men Fashion' => ['Shirts', 'T-Shirts', 'Pants', 'Shoes'],
-            'Women Fashion' => ['Dresses', 'Tops', 'Handbags', 'Shoes'],
-            'Electronics' => ['Mobile Phones', 'Laptops', 'Accessories'],
-            'Home & Living' => ['Furniture', 'Kitchen', 'Decor'],
-            'Beauty & Health' => ['Skincare', 'Makeup', 'Hair Care'],
+            'Medicines' => [
+                'Tablet',
+                'Capsule',
+                'Syrup',
+                'Injection',
+                'Ointment'
+            ],
+
+            'Medical Devices' => [
+                'Thermometer',
+                'Blood Pressure Monitor',
+                'Glucometer',
+                'Pulse Oximeter'
+            ],
+
+            'Health Care Equipment' => [
+                'Nebulizer',
+                'Oxygen Cylinder',
+                'Wheelchair',
+                'Hospital Bed'
+            ],
+
+            'Personal Care' => [
+                'Skin Care',
+                'Hair Care',
+                'Oral Care',
+                'Hygiene Products'
+            ],
+
+            'Baby Care' => [
+                'Baby Lotion',
+                'Diapers',
+                'Baby Shampoo',
+                'Feeding Bottle'
+            ],
+
+            'Diabetic Care' => [
+                'Glucose Monitor',
+                'Test Strips',
+                'Diabetic Food'
+            ],
+
+            'Heart & Blood Pressure' => [
+                'BP Machine',
+                'Heart Monitor',
+                'Cholesterol Test'
+            ],
+
+            'Vitamins & Supplements' => [
+                'Vitamin C',
+                'Vitamin D',
+                'Calcium',
+                'Protein Powder'
+            ],
+
+            'Sexual Wellness' => [
+                'Condom',
+                'Lubricants',
+                'Pregnancy Test Kit'
+            ],
+
+            'First Aid' => [
+                'Bandage',
+                'Antiseptic',
+                'Cotton',
+                'Pain Relief Spray'
+            ],
+
+            'Lab Test & Diagnostics' => [
+                'Blood Test Kit',
+                'Urine Test Kit',
+                'Covid Test Kit'
+            ],
+
+            'Elderly Care' => [
+                'Walking Stick',
+                'Adult Diapers',
+                'Support Belt'
+            ],
+
+            'Orthopedic Care' => [
+                'Knee Support',
+                'Back Support',
+                'Neck Collar'
+            ],
+
+            'Covid & Safety' => [
+                'Face Mask',
+                'Hand Sanitizer',
+                'Gloves'
+            ],
+
+            'Herbal & Ayurvedic' => [
+                'Herbal Medicine',
+                'Natural Oil',
+                'Supplements'
+            ],
         ];
 
         foreach ($data as $categoryName => $subcategories) {

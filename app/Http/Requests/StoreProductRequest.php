@@ -16,7 +16,7 @@ class StoreProductRequest extends FormRequest
         return [
             // Basic Info
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:100', 'unique:products,sku'],
+            'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku'],
 
             // Relations
             'brand' => ['required', 'integer', 'exists:brands,id'],

@@ -57,6 +57,7 @@ use App\Http\Controllers\Product\ProductController;
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('products')->group(function () {
         Route::post('/create', [ProductController::class, 'store']);
+        Route::get('/', [ProductController::class, 'index']);
 
 
         Route::get('/get-categories', [ProductController::class, 'getCategory']);

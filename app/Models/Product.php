@@ -57,6 +57,9 @@ class Product extends Model
 
         static::saving(function ($product) {
 
+            /** =========================
+            *  SLUG GENERATE
+            * ========================= */
             if (empty($product->slug) || $product->isDirty('name')) {
                 $baseSlug = Str::slug($product->name);
                 $newSlug = $baseSlug . '-' . Str::lower(Str::random(4));
@@ -69,6 +72,22 @@ class Product extends Model
                     $newSlug = $baseSlug . '-' . Str::lower(Str::random(6));
                 }
                 $product->slug = $newSlug;
+            }
+
+            /** =========================
+            *  SKU GENERATE
+            * ========================= */
+            if (empty($product->sku)) {
+                $prefix = 'PRD';
+                $sku = $prefix . '-' . strtoupper(Str::random(6));
+                while (
+                    static::where('sku', $sku)
+                        ->where('id', '!=', $product->id)
+                        ->exists()
+                ) {
+                    $sku = $prefix . '-' . strtoupper(Str::random(8));
+                }
+                $product->sku = $sku;
             }
         });
     }

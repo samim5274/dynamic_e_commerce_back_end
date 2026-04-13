@@ -75,14 +75,14 @@ class ProductSeeder extends Seeder
             }
 
             // Add 1-2 sample images (placeholder)
-            for($img=0; $img<2; $img++){
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_path' => 'products/placeholder.png', // put a placeholder.png in public/storage/products/
-                    'is_primary' => $img === 0 ? 1 : 0,
-                    'sort_order' => $img,
-                ]);
-            }
+            // for($img=0; $img<2; $img++){
+            //     ProductImage::create([
+            //         'product_id' => $product->id,
+            //         'image_path' => 'products/placeholder.png', // put a placeholder.png in public/storage/products/
+            //         'is_primary' => $img === 0 ? 1 : 0,
+            //         'sort_order' => $img,
+            //     ]);
+            // }
         }
 
         $this->command->info("500 sample products inserted successfully!");

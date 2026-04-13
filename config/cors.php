@@ -20,6 +20,7 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => ['https://dynamicbazarmerchantbd.com', 'https://api.dynamicbazarmerchantbd.com'],
+    // 'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 

@@ -95,82 +95,141 @@ class ProductController extends Controller
         $user = auth('sanctum')->user();
         $data = $request->validated();
 
+        // try {
+        //     DB::beginTransaction();
+
+        //     $product = new Product();
+
+        //     $product->name = $data['name'];
+        //     $product->sku = $data['sku'];
+
+        //     $product->brand_id = $data['brand'];
+        //     $product->category_id = $data['category'];
+        //     $product->subcategory_id = $data['subcategory'];
+
+        //     $product->price = $data['price'];
+        //     $product->discount_price = $data['discount_price'] ?? 0;
+        //     $product->stock_quantity = $data['stock_quantity'];
+        //     $product->min_stock = $data['min_stock'] ?? 0;
+
+        //     $product->summary = $data['summary'] ?? null;
+        //     $product->description = $data['description'] ?? null;
+        //     $product->slug = $data['slug'] ?? null;
+
+        //     $product->meta_title = $data['title'] ?? null;
+        //     $product->meta_keywords = $data['keywords'] ?? null;
+        //     $product->meta_description = $data['meta_description'] ?? null;
+
+        //     $product->is_featured = $data['is_featured'] ?? false;
+        //     $product->is_on_sale = $data['is_on_sale'] ?? false;
+        //     $product->is_active = $data['is_active'] ?? true;
+
+        //     $product->save();
+
+        //     // save product variants if provided
+        //     if ($request->has('variants') && is_array($request->variants)) {
+        //         foreach ($request->variants as $variant) {
+        //             ProductVariant::create([
+        //                 'product_id' => $product->id,
+        //                 'color' => $variant['color'] ?? null,
+        //                 'size' => $variant['size'] ?? null,
+        //                 'price' => $variant['price'] ?? 0,
+        //                 'stock' => $variant['stock'] ?? 0,
+        //             ]);
+        //         }
+        //     }
+
+        //     // save product images and get their paths
+        //     $images = $this->storeProductImages($request, $product->id, $user);
+        //     $product->images = $images;
+
+        //     DB::commit();
+
+        //     return response()->json([
+        //         'success' => true,
+        //         'message' => 'Product created successfully.',
+        //         'data' => $product
+        //     ], 201);
+        // } catch (\Throwable $e) {
+        //     DB::rollBack();
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => "Product can not created. Error: " . $e->getMessage(),
+        //     ], 500);
+        // }
+
         try {
-            DB::beginTransaction();
+            return DB::transaction(function () use ($request, $data) {
+                $product = Product::create([
+                    'name'             => $data['name'],
+                    'sku'              => $data['sku'],
+                    'brand_id'         => $data['brand'],
+                    'category_id'      => $data['category'],
+                    'subcategory_id'   => $data['subcategory'],
+                    'price'            => $data['price'],
+                    'discount_price'   => $data['discount_price'] ?? 0,
+                    'stock_quantity'   => $data['stock_quantity'],
+                    'min_stock'        => $data['min_stock'] ?? 0,
+                    'summary'          => $data['summary'] ?? null,
+                    'description'      => $data['description'] ?? null,
+                    'slug'             => $data['slug'],
+                    'meta_title'       => $data['title'] ?? null,
+                    'meta_keywords'    => $data['keywords'] ?? null,
+                    'meta_description' => $data['meta_description'] ?? null,
+                    'is_featured'      => $data['is_featured'] ?? false,
+                    'is_on_sale'       => $data['is_on_sale'] ?? false,
+                    'is_active'        => $data['is_active'] ?? true,
+                ]);
 
-            $product = new Product();
-
-            $product->name = $data['name'];
-            $product->sku = $data['sku'];
-
-            $product->brand_id = $data['brand'];
-            $product->category_id = $data['category'];
-            $product->subcategory_id = $data['subcategory'];
-
-            $product->price = $data['price'];
-            $product->discount_price = $data['discount_price'] ?? 0;
-            $product->stock_quantity = $data['stock_quantity'];
-            $product->min_stock = $data['min_stock'] ?? 0;
-
-            $product->summary = $data['summary'] ?? null;
-            $product->description = $data['description'] ?? null;
-            $product->slug = $data['slug'] ?? null;
-
-            $product->meta_title = $data['title'] ?? null;
-            $product->meta_keywords = $data['keywords'] ?? null;
-            $product->meta_description = $data['meta_description'] ?? null;
-
-            $product->is_featured = $data['is_featured'] ?? false;
-            $product->is_on_sale = $data['is_on_sale'] ?? false;
-            $product->is_active = $data['is_active'] ?? true;
-
-            $product->save();
-
-            // save product variants if provided
-            if ($request->has('variants') && is_array($request->variants)) {
-                foreach ($request->variants as $variant) {
-                    ProductVariant::create([
-                        'product_id' => $product->id,
-                        'color' => $variant['color'] ?? null,
-                        'size' => $variant['size'] ?? null,
-                        'price' => $variant['price'] ?? 0,
-                        'stock' => $variant['stock'] ?? 0,
-                    ]);
+                if ($request->has('variants')) {
+                    foreach ($request->variants as $variant) {
+                        $product->variants()->create([
+                            'color'          => $variant['color'] ?? null,
+                            'size'           => $variant['size'] ?? null,
+                            'price'          => $variant['price'] ?? 0,
+                            'stock_quantity' => $variant['stock'] ?? 0,
+                        ]);
+                    }
                 }
-            }
 
-            // save product images and get their paths
-            $images = $this->storeProductImages($request, $product->id, $user);
-            $product->images = $images;
+                if ($request->hasFile('images')) {
+                    $this->storeProductImages($request->file('images'), $product);
+                }
 
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Product created successfully.',
-                'data' => $product
-            ], 201);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product created successfully.',
+                    'data'    => $product->load(['variants', 'images'])
+                ], 201);
+            });
         } catch (\Throwable $e) {
-            DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => "Product can not created. Error: " . $e->getMessage(),
+                'message' => "Failed to create product.",
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
 
-    private function storeProductImages(Request $request, $productId, $user)
+    private function storeProductImages(array $images, Product $product): void
     {
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $index => $image) {
+        $imageData = [];
+
+        foreach ($images as $index => $image) {
             $path = $image->store('products', 'public');
-                ProductImage::create([
-                    'product_id' => $productId,
-                    'image_path' => $path,
-                    'is_primary' => $index === 0,
-                    'sort_order' => $index
-                ]);
-            }
+
+            $imageData[] = [
+                'product_id' => $product->id,
+                'image_path' => $path,
+                'is_primary' => $index === 0,
+                'sort_order' => $index,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if (!empty($imageData)) {
+            ProductImage::insert($imageData);
         }
     }
 
@@ -204,101 +263,186 @@ class ProductController extends Controller
 
     public function edit(Request $request, $id){
         // ❗ Only product details can be updated, not the images and variants
-        $user = auth('sanctum')->user();
-        $data = $request->all();
+        // $user = auth('sanctum')->user();
+        // $data = $request->all();
+
+        // try {
+        //     $product = Product::where('id', $id)->firstOrFail();
+
+        //     // ------------------------
+        //     // Delete old images if new images uploaded
+        //     // ------------------------
+        //     if ($request->hasFile('images')) {
+        //         foreach ($product->images as $oldImage) {
+        //             // delete from storage
+        //             if (\Storage::disk('public')->exists($oldImage->image_path)) {
+        //                 \Storage::disk('public')->delete($oldImage->image_path);
+        //             }
+        //             // delete from database
+        //             $oldImage->delete();
+        //         }
+
+        //         // save new images
+        //         foreach ($request->file('images') as $index => $image) {
+        //             $path = $image->store("products", 'public');
+        //             ProductImage::create([
+        //                 'product_id' => $product->id,
+        //                 'image_path' => $path,
+        //                 'is_primary' => $index === 0 ? 1 : 0,
+        //                 'sort_order' => $index
+        //             ]);
+        //         }
+        //     }
+
+        //     // Basic fields
+        //     $product->name = $data['name'] ?? $product->name;
+        //     $product->sku = $data['sku'] ?? $product->sku;
+        //     $product->brand_id = $data['brand'] ?? $product->brand_id;
+        //     $product->category_id = $data['category'] ?? $product->category_id;
+        //     $product->subcategory_id = $data['subcategory'] ?? $product->subcategory_id;
+
+        //     // Pricing & stock
+        //     $product->price = $data['price'] ?? $product->price;
+        //     $product->discount_price = $data['discount_price'] ?? $product->discount_price;
+        //     $product->stock_quantity = $data['stock_quantity'] ?? $product->stock_quantity;
+        //     $product->min_stock = $data['min_stock'] ?? $product->min_stock;
+
+        //     // Description & summary
+        //     $product->summary = $data['summary'] ?? $product->summary;
+        //     $product->description = $data['description'] ?? $product->description;
+
+        //     // meta fields
+        //     $product->meta_title = $data['title'] ?? $product->meta_title;
+        //     $product->meta_keywords = $data['keywords'] ?? $product->meta_keywords;
+        //     $product->meta_description = $data['meta_description'] ?? $product->meta_description;
+
+        //     // status fields
+        //     if (isset($data['is_featured'])) {
+        //         $product->is_featured = filter_var($data['is_featured'], FILTER_VALIDATE_BOOLEAN);
+        //     }
+        //     if (isset($data['is_on_sale'])) {
+        //         $product->is_on_sale = filter_var($data['is_on_sale'], FILTER_VALIDATE_BOOLEAN);
+        //     }
+        //     if (isset($data['is_active'])) {
+        //         $product->is_active = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN);
+        //     }
+
+        //     // save updated product
+        //     if ($product->isDirty()) {
+        //         // only update if there are changes
+        //         if ($product->save()) {
+        //             return response()->json([
+        //                 'success' => true,
+        //                 'message' => 'Product updated successfully.',
+        //                 'data' => $product
+        //             ], 200);
+        //         } else {
+        //             return response()->json([
+        //                 'success' => false,
+        //                 'message' => 'Product can not updated.',
+        //             ], 500);
+        //         }
+        //     } else {
+        //         return response()->json([
+        //             'success' => false,
+        //             'message' => 'No changes detected to update.',
+        //         ], 400);
+        //     }
+        // } catch (ModelNotFoundException $e) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Product not found.',
+        //     ], 404);
+        // } catch (\Throwable $e) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => "Product can not updated. Error: " . $e->getMessage(),
+        //     ], 500);
+        // }
 
         try {
-            $product = Product::where('id', $id)->firstOrFail();
+            $product = Product::with('images')->findOrFail($id);
 
-            // ------------------------
-            // Delete old images if new images uploaded
-            // ------------------------
-            if ($request->hasFile('images')) {
-                foreach ($product->images as $oldImage) {
-                    // delete from storage
-                    if (\Storage::disk('public')->exists($oldImage->image_path)) {
-                        \Storage::disk('public')->delete($oldImage->image_path);
+            return DB::transaction(function () use ($request, $product) {
+                $product->update($request->only([
+                    'name', 'sku', 'price', 'discount_price', 'stock_quantity',
+                    'min_stock', 'summary', 'description', 'meta_title',
+                    'meta_keywords', 'meta_description'
+                ]));
+
+                if ($request->has('brand')) $product->brand_id = $request->brand;
+                if ($request->has('category')) $product->category_id = $request->category;
+                if ($request->has('subcategory')) $product->subcategory_id = $request->subcategory;
+
+                $product->is_featured = $request->boolean('is_featured', $product->is_featured);
+                $product->is_on_sale = $request->boolean('is_on_sale', $product->is_on_sale);
+                $product->is_active = $request->boolean('is_active', $product->is_active);
+
+                if ($request->has('variants')) {
+
+                    $product->variants()->delete();
+
+                    $variants = [];
+                    foreach ($request->variants as $variant) {
+                        $variants[] = [
+                            'product_id'        => $product->id,
+                            'color'             => $variant['color'] ?? null,
+                            'size'              => $variant['size'] ?? null,
+                            'price'             => $variant['price'] ?? 0,
+                            'stock_quantity'    => $variant['stock'] ?? 0,
+                            'created_at'        => now(),
+                            'updated_at'        => now(),
+                        ];
                     }
-                    // delete from database
-                    $oldImage->delete();
+
+                    if (!empty($variants)) {
+                        ProductVariant::insert($variants);
+                    }
                 }
 
-                // save new images
-                foreach ($request->file('images') as $index => $image) {
-                    $path = $image->store("products", 'public');
-                    ProductImage::create([
-                        'product_id' => $product->id,
-                        'image_path' => $path,
-                        'is_primary' => $index === 0 ? 1 : 0,
-                        'sort_order' => $index
-                    ]);
+                if ($request->hasFile('images')) {
+                    $this->updateProductImages($product, $request->file('images'));
                 }
-            }
 
-            // Basic fields
-            $product->name = $data['name'] ?? $product->name;
-            $product->sku = $data['sku'] ?? $product->sku;
-            $product->brand_id = $data['brand'] ?? $product->brand_id;
-            $product->category_id = $data['category'] ?? $product->category_id;
-            $product->subcategory_id = $data['subcategory'] ?? $product->subcategory_id;
-
-            // Pricing & stock
-            $product->price = $data['price'] ?? $product->price;
-            $product->discount_price = $data['discount_price'] ?? $product->discount_price;
-            $product->stock_quantity = $data['stock_quantity'] ?? $product->stock_quantity;
-            $product->min_stock = $data['min_stock'] ?? $product->min_stock;
-
-            // Description & summary
-            $product->summary = $data['summary'] ?? $product->summary;
-            $product->description = $data['description'] ?? $product->description;
-
-            // meta fields
-            $product->meta_title = $data['title'] ?? $product->meta_title;
-            $product->meta_keywords = $data['keywords'] ?? $product->meta_keywords;
-            $product->meta_description = $data['meta_description'] ?? $product->meta_description;
-
-            // status fields
-            if (isset($data['is_featured'])) {
-                $product->is_featured = filter_var($data['is_featured'], FILTER_VALIDATE_BOOLEAN);
-            }
-            if (isset($data['is_on_sale'])) {
-                $product->is_on_sale = filter_var($data['is_on_sale'], FILTER_VALIDATE_BOOLEAN);
-            }
-            if (isset($data['is_active'])) {
-                $product->is_active = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN);
-            }
-
-            // save updated product
-            if ($product->isDirty()) {
-                // only update if there are changes
-                if ($product->save()) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Product updated successfully.',
-                        'data' => $product
-                    ], 200);
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Product can not updated.',
-                    ], 500);
+                if ($product->isDirty()) {
+                    $product->save();
                 }
-            } else {
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'No changes detected to update.',
-                ], 400);
-            }
+                    'success' => true,
+                    'message' => 'Product updated successfully.',
+                    'data' => $product->load('images')
+                ], 200);
+            });
         } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Product not found.',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Product not found.'], 404);
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => "Product can not updated. Error: " . $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Update failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function updateProductImages(Product $product, array $newImages): void
+    {
+        foreach ($product->images as $oldImage) {
+            Storage::disk('public')->delete($oldImage->image_path);
+            $oldImage->delete();
+        }
+
+        $imageData = [];
+        foreach ($newImages as $index => $image) {
+            $path = $image->store('products', 'public');
+            $imageData[] = [
+                'product_id' => $product->id,
+                'image_path' => $path,
+                'is_primary' => $index === 0,
+                'sort_order' => $index,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if (!empty($imageData)) {
+            ProductImage::insert($imageData);
         }
     }
 

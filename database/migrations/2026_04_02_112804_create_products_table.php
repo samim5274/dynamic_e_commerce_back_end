@@ -31,8 +31,6 @@ return new class extends Migration
             $table->integer('stock_quantity')->default(0);
             $table->integer('min_stock')->default(5);
 
-            $table->string('image')->nullable();
-
             $table->boolean('is_active')->default(true);
 
             // ১ = Pending, ২ = Approved, ৩ = Rejected

@@ -23,7 +23,6 @@ class Product extends Model
         'discount_price',
         'stock_quantity',
         'min_stock',
-        'image',
         'is_active',
         'approval_status',
         'admin_remark',

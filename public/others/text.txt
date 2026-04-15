@@ -1,0 +1,87 @@
+
+
+
+// return DB::transaction(function() use ($data, $user, $reg)
+// {
+//     $product = Product::lockForUpdate()->findOrFail($data['product_id']);
+
+//     // 4. Variant handling
+//     $variant = null;
+//     if (!empty($data['variant_id'])) {
+//         $variant = ProductVariant::lockForUpdate()
+//             ->where('id', $data['variant_id'])
+//             ->where('product_id', $product->id)
+//             ->first();
+
+//         if (!$variant) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'Invalid variant selected.'
+//             ], 400);
+//         }
+//     }
+
+//     // 5. Stock check
+//     $availableStock = $variant ? $variant->stock_quantity : $product->stock_quantity;
+
+//     if ($availableStock < $data['quantity']) {
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'Insufficient stock.'
+//         ], 409);
+//     }
+
+
+//     // 6. Price
+//     $price = $variant?->price ?? $product->discount_price ?? $product->price;
+
+//     // 7. Find existing cart item
+//     $cartItem = Cart::where('reg', $reg)
+//         ->where('product_id', $product->id)
+//         ->when($variant, function ($q) use ($variant) {
+//             $q->where('variant_id', $variant->id);
+//         }, function ($q) {
+//             $q->whereNull('variant_id');
+//         })
+//         ->first();
+
+//     if ($cartItem) {
+//         $newQty = $cartItem->quantity + $data['quantity'];
+//         // 8. Re-check stock for updated qty
+//         if ($newQty > $availableStock) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'Stock limit exceeded.'
+//             ], 409);
+//         }
+//         $cartItem->update([
+//             'quantity' => $newQty
+//         ]);
+//     } else {
+//         Cart::create([
+//             'reg'        => $reg,
+//             'user_id'    => $user->id,
+//             'product_id' => $product->id,
+//             'variant_id' => $variant?->id,
+//             'quantity'   => $data['quantity'],
+//             'price'      => $price,
+//         ]);
+//     }
+
+//     if ($variant) {
+//         $variant->decrement('stock_quantity', $data['quantity']);
+//     } else {
+//         $product->decrement('stock_quantity', $data['quantity']);
+//     }
+
+//     return response()->json([
+//         'success' => true,
+//         'message' => 'Product added to cart successfully.',
+//         'data' => [
+//             'product_id' => $product->id,
+//             'variant_id' => $variant?->id,
+//             'quantity'   => $data['quantity'],
+//             'price'      => $price
+//         ]
+//     ], 201);
+// });

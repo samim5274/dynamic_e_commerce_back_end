@@ -29,6 +29,27 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ======================
 // Profile Routes
 // ======================
@@ -50,6 +71,22 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // get tree user
 Route::get('/tree-user', [ProfileController::class, 'treeUser']);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ======================
 // Product Routes
 // ======================
@@ -70,6 +107,22 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{slug}', [ProductController::class, 'show'])->where('slug', '[a-zA-Z0-9\-]+');
     });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ======================
@@ -94,10 +147,23 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
 // ======================
 // E-commerce Routes
 // ======================
 use App\Http\Controllers\Ecommerce\EcommerceProductController;
+use App\Http\Controllers\Ecommerce\CartController;
 Route::prefix('public')->group(function () {
     Route::get('/products', [EcommerceProductController::class, 'index']);
 
@@ -105,4 +171,8 @@ Route::prefix('public')->group(function () {
     Route::get('/get-subcategories', [ProductController::class, 'getSubCategory']);
     Route::get('/get-brands', [ProductController::class, 'getBrand']);
     Route::get('/{slug}', [ProductController::class, 'show'])->where('slug', '[a-zA-Z0-9\-]+');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/add-to-cart', [CartController::class, 'addToCart']);
+    });
 });

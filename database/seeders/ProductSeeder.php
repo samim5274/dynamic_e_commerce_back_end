@@ -31,7 +31,7 @@ class ProductSeeder extends Seeder
             return;
         }
 
-        for ($i = 1; $i <= 500; $i++) {
+        for ($i = 1; $i <= 100; $i++) {
             $category = $categories->random();
             $subcategory = $subcategories->where('category_id', $category->id)->random();
             $brand = $brands->random();

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -29,8 +30,8 @@ class ProductController extends Controller
                 'category:id,name',
                 'subcategory:id,name',
                 'brand:id,name',
-                ])
-                ->get();
+                'images:id,product_id,image_path,is_primary'
+            ])->get();
 
             return response()->json([
                 'success' => true,
@@ -239,9 +240,16 @@ class ProductController extends Controller
                 'category:id,name',
                 'subcategory:id,name',
                 'brand:id,name',
-                'variants',
-                'images'
-            ])->where('slug', $slug)->firstOrFail();
+                'variants:id,product_id,color,size,price,stock_quantity',
+                'images:id,product_id,image_path,is_primary,sort_order'
+            ])
+            ->where('slug', $slug)->firstOrFail();
+
+            // Transform images (VERY IMPORTANT for live server)
+            $product->images->transform(function ($image) {
+                $image->url = asset('storage/' . $image->image_path);
+                return $image;
+            });
 
             return response()->json([
                 'success' => true,
@@ -249,14 +257,23 @@ class ProductController extends Controller
                 'data' => $product
             ], 200);
         } catch (ModelNotFoundException $e) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Product not found.',
             ], 404);
+
         } catch (\Throwable $e) {
+
+            // log error for production debugging
+            Log::error('Product show API error', [
+                'slug' => $slug,
+                'error' => $e->getMessage()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => "Product can not fetched. Error: " . $e->getMessage(),
+                'message' => 'Something went wrong while fetching product.',
             ], 500);
         }
     }

@@ -1,0 +1,83 @@
+vendor model
+protected $fillable = [
+    'shop_name',--------------------
+    'shop_slug',
+    'shop_logo',--------------------
+    'shop_description',-------------
+    'vendor_status',
+    'is_active',
+    'wallet_balance',
+    'commission_rate',
+    'tax_id',
+    'business_license',
+    'business_document',
+    'email',-------------------------
+    'phone'--------------------------
+    ,'address',----------------------
+    'city',--------------------------
+    'state',-------------------------
+    'country',-----------------------
+    'postal_code',-------------------
+    'featured',
+    'rating',
+    'total_products',
+    'deleted_at',
+];
+
+// frontend env file // VITE_API_BASE_URL=http://127.0.0.1:8080/api
+
+
+cp .env.example .env
+composer install
+php artisan key:generate
+chmod -R 775 storage bootstrap/cache
+
+git pull origin main or git pull --no-rebase origin main
+
+
+
+
+# ১. 
+git merge --abort
+
+# ২. 
+git reset --hard origin/main
+
+# ৩. 
+git pull origin main
+
+
+
+
+
+composer install --no-dev --optimize-autoloader
+php artisan optimize:clear
+
+// front end change hole
+php artisan view:clear
+php artisan route:clear
+php artisan config:cache
+
+chmod 644 public/storage/users/*.png
+chmod 755 public/storage/users
+chmod 755 public/storage
+
+
+
+
+info@dynamicbazarmerchantbd.com
+XQv63derR,2tMuPi
+
+core file:     'allowed_origins' => ['https://dynamicbazarmerchantbd.com', 'https://api.dynamicbazarmerchantbd.com'],
+
+
+
+
+
+
+
+------------------ ata backend ar root folder a .htaccess file a add then image show in live server ------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

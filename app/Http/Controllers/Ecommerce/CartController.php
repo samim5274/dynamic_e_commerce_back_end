@@ -30,7 +30,7 @@ class CartController extends Controller
 
         $reg = RegGenerator::generateOrderReg($userId);
 
-        $items = Cart::with(['product','user'])
+        $items = Cart::with(['product.images','variant','user'])
             ->where('user_id', $userId)
             ->where('reg', $reg)
             ->get();
@@ -165,5 +165,13 @@ class CartController extends Controller
                 'message' => $e->getMessage(),
             ], $e->getCode() ?: 500);
         }
+    }
+
+    public function updateQty(Request $request, $reg, $product_id, $variant_id)
+    {
+        return response()->json([
+            'success' => true,
+            'message' => "Qty updated",
+        ]);
     }
 }

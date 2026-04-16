@@ -163,16 +163,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // E-commerce Routes
 // ======================
 use App\Http\Controllers\Ecommerce\EcommerceProductController;
-use App\Http\Controllers\Ecommerce\CartController;
 Route::prefix('public')->group(function () {
+
     Route::get('/products', [EcommerceProductController::class, 'index']);
 
     Route::get('/get-categories', [ProductController::class, 'getCategory']);
     Route::get('/get-subcategories', [ProductController::class, 'getSubCategory']);
     Route::get('/get-brands', [ProductController::class, 'getBrand']);
     Route::get('/{slug}', [ProductController::class, 'show'])->where('slug', '[a-zA-Z0-9\-]+');
+});
 
-    Route::middleware('auth:sanctum')->group(function () {
+use App\Http\Controllers\Ecommerce\CartController;
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('cart')->group(function () {
+        Route::get('/', [CartController::class, 'index']);
         Route::post('/add-to-cart', [CartController::class, 'addToCart']);
     });
 });
+

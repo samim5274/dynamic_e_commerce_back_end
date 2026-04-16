@@ -18,6 +18,30 @@ use App\Services\RegGenerator;
 
 class CartController extends Controller
 {
+    public function index(){
+
+        $userId = Auth::id();
+
+        if (!$userId) {
+            return response()->json([
+                'message' => 'Unauthorized user',
+            ], 401);
+        }
+
+        $reg = RegGenerator::generateOrderReg($userId);
+
+        $items = Cart::with(['product','user'])
+            ->where('user_id', $userId)
+            ->where('reg', $reg)
+            ->get();
+
+        return response()->json([
+            'message' => 'Cart items',
+            'reg' => $reg,
+            'data' => $items
+        ], 200);
+    }
+
     public function addToCart(Request $request)
     {
         $data = $request->validate([
@@ -43,10 +67,103 @@ class CartController extends Controller
             ], 500);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Add to cart successfully -> '. $user->name,
-        ], 200);
+        try{
+            return DB::transaction(function () use ($data, $user, $reg) {
 
+            $product = Product::lockForUpdate()->findOrFail($data['product_id']);
+
+            // ======================
+            // Variant handling
+            // ======================
+            $variant = null;
+
+            if (!empty($data['variant_id'])) {
+                $variant = ProductVariant::lockForUpdate()
+                    ->where('product_id', $product->id)
+                    ->findOrFail($data['variant_id']);
+            }
+
+            // ======================
+            // Stock source
+            // ======================
+            $source = $variant ?: $product;
+            // $availableStock = $source->stock_quantity ?? 0;
+
+            // ======================
+            // Price
+            // ======================
+            $price = $variant
+                ? ($variant->price ?? $product->price)
+                : ($product->discount_price ?? $product->price);
+
+            // ======================
+            // Cart item find
+            // ======================
+            $query = Cart::where('reg', $reg)
+                ->where('product_id', $product->id);
+
+            if ($variant) {
+                $query->where('variant_id', $variant->id);
+            } else {
+                $query->whereNull('variant_id');
+            }
+
+            $cartItem = $query->first();
+
+            // ======================
+            // Quantity logic
+            // ======================
+            $requestedQty = (int) $data['quantity'];
+            $currentQty = $cartItem->quantity ?? 0;
+            $newQty = $currentQty + $requestedQty;
+
+            // ======================
+            // Stock validation
+            // ======================
+            // if ($newQty > $availableStock) {
+            //     throw new \Exception('Requested quantity exceeds available stock.', 409);
+            // }
+
+            // ======================
+            // Save cart
+            // ======================
+            if ($cartItem) {
+                $cartItem->update([
+                    'quantity' => $newQty
+                ]);
+            } else {
+                $cartItem = Cart::create([
+                    'reg'        => $reg,
+                    'user_id'    => $user->id,
+                    'product_id' => $product->id,
+                    'variant_id' => $variant?->id,
+                    'quantity'   => $requestedQty,
+                    'price'      => $price,
+                ]);
+            }
+
+            // ======================
+            // RESPONSE (OUTSIDE EXCEPTION FLOW STYLE)
+            // ======================
+            return response()->json([
+                'success' => true,
+                'message' => 'Product added to cart successfully.',
+                'data' => [
+                    'cart_id'    => $cartItem->id,
+                    'product_id' => $product->id,
+                    'variant_id' => $variant?->id,
+                    'quantity'   => $cartItem->quantity,
+                    'price'      => (float) $price,
+                    'total'      => (float) ($price * $cartItem->quantity)
+                ]
+            ], 201);
+
+        });
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getCode() ?: 500);
+        }
     }
 }

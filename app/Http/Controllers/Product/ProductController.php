@@ -241,7 +241,7 @@ class ProductController extends Controller
                 'category:id,name',
                 'subcategory:id,name',
                 'brand:id,name',
-                'variants:id,product_id,color,size,price,stock_quantity',
+                'variants:id,product_id,color,size,price,stock_quantity,discount_price',
                 'images:id,product_id,image_path,is_primary,sort_order'
             ])
             ->where('slug', $slug)->firstOrFail();
@@ -407,6 +407,7 @@ class ProductController extends Controller
                             'color'             => $variant['color'] ?? null,
                             'size'              => $variant['size'] ?? null,
                             'price'             => $variant['price'] ?? 0,
+                            'discount_price'    => $variant['discount_price'] ?? 0,
                             'stock_quantity'    => $variant['stock'] ?? 0,
                             'created_at'        => now(),
                             'updated_at'        => now(),

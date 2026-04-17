@@ -53,6 +53,7 @@ class StoreProductRequest extends FormRequest
             'variants.*.color' => ['required_with:variants', 'string', 'max:50'],
             'variants.*.size' => ['required_with:variants', 'string', 'max:50'],
             'variants.*.price' => ['required_with:variants', 'numeric', 'min:0'],
+            'variants.*.discount_price' => ['required_with:variants', 'numeric', 'min:0'],
             'variants.*.stock' => ['required_with:variants', 'integer', 'min:0'],
         ];
     }
@@ -81,6 +82,7 @@ class StoreProductRequest extends FormRequest
             'variants.*.color.required_with' => 'Variant color is required.',
             'variants.*.size.required_with' => 'Variant size is required.',
             'variants.*.price.required_with' => 'Variant price is required.',
+            'variants.*.discount_price.required_with' => 'Variant discount price is required.',
             'variants.*.stock.required_with' => 'Variant stock is required.',
         ];
     }

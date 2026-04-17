@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('size')->nullable();  // উদা: XL, M, 42
 
             $table->decimal('price', 12, 2)->nullable(); // color wise price up/down
+            $table->decimal('discount_price', 12, 2)->nullable(); // color wise price up/down
             $table->integer('stock_quantity')->default(0);
 
             $table->string('sku')->unique()->nullable();

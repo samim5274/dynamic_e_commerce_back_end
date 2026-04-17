@@ -188,6 +188,7 @@ class ProductController extends Controller
                             'color'          => $variant['color'] ?? null,
                             'size'           => $variant['size'] ?? null,
                             'price'          => $variant['price'] ?? 0,
+                            'discount_price' => $variant['discount_price'] ?? 0,
                             'stock_quantity' => $variant['stock'] ?? 0,
                         ]);
                     }

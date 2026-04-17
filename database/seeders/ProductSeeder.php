@@ -70,6 +70,7 @@ class ProductSeeder extends Seeder
                     'color'             => ['Red','Blue','Green','Black','White'][rand(0,4)],
                     'size'              => ['S','M','L','XL'][rand(0,3)],
                     'price'             => $product->price,
+                    'discount_price'    => $product->discount_price,
                     'stock_quantity'    => rand(5,20),
                 ]);
             }

@@ -267,4 +267,36 @@ class CartController extends Controller
             ], 500);
         }
     }
+
+    public function getCartItem($reg)
+    {
+        try {
+            $items = Cart::with(['product.images','variant','user'])
+                        ->where('reg', $reg)->get();
+
+            if ($items->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No cart items found.',
+                    'data' => []
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart items fetched successfully.',
+                'reg' => $reg,
+                'data' => $items
+            ], 200);
+
+        } catch (\Throwable $e) {
+
+            \Log::error('Cart fetch error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while fetching cart items.',
+            ], 500);
+        }
+    }
 }

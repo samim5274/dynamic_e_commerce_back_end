@@ -53,6 +53,7 @@ class PaymentController extends Controller
             'currency' => 'BDT',
             'status' => 'Pending',
             'amount' => $amount,
+            'paid_at' => now()->toDateString(),
         ]);
 
         return response()->json([

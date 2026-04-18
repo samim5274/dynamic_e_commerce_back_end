@@ -93,4 +93,10 @@ class User extends Authenticatable
         return $this->hasMany(PointTransaction::class);
     }
 
+    // Order
+    public function user()
+    {
+        return $this->hasMany(Order::class, 'user_id');
+    }
+
 }

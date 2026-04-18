@@ -177,6 +177,7 @@ use App\Http\Controllers\Ecommerce\CartController;
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('cart')->group(function () {
         Route::get('/', [CartController::class, 'index']);
+        Route::get('/{reg}', [CartController::class, 'getCartItem']);
         Route::post('/add-to-cart', [CartController::class, 'addToCart']);
         Route::post('/qty-update/{reg}/{product_id}/{variant_id}', [CartController::class, 'updateQty']);
         Route::post('/remove-to-cart/{cart_id}/{reg}/{product_id}/{variant_id}', [CartController::class, 'removeToCart']);
@@ -187,5 +188,28 @@ use App\Http\Controllers\Payment\PaymentController;
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('pay')->group(function () {
         Route::post('/{reg}', [PaymentController::class, 'index']);
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+// =============================
+// E-commerce Admin order Routes
+// =============================
+use App\Http\Controllers\Order\OrderController;
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index']);
+        Route::get('/{reg}', [OrderController::class, 'getOrderDetails']);
+        Route::post('/update-status/{reg}', [OrderController::class, 'updateStatus']);
     });
 });

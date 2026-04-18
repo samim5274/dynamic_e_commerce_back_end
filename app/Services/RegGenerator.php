@@ -56,7 +56,7 @@ class RegGenerator
             }
 
             // 3. Generate new reg
-            return 'CART-' . $userId . '-' . $nextSeq;
+            return 'ORD-0' . $userId . '-' . $nextSeq;
         });
     }
 }

@@ -23,6 +23,8 @@ return new class extends Migration
             // unpaid|pending|paid|failed|canceled|processing
             $table->enum('status', ['Pending', 'Cancelled', 'Processing', 'Delivered'])->default('Pending');
             $table->double('amount')->default(0);
+
+            $table->string('slug')->unique();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
         });

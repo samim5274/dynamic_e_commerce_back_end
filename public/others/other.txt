@@ -32,18 +32,21 @@ composer install
 php artisan key:generate
 chmod -R 775 storage bootstrap/cache
 
+
+
+
 git pull origin main or git pull --no-rebase origin main
 
 
 
 
-# ১. 
+# ১.
 git merge --abort
 
-# ২. 
+# ২.
 git reset --hard origin/main
 
-# ৩. 
+# ৩.
 git pull origin main
 
 

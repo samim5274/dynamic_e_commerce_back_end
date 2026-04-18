@@ -22,7 +22,7 @@ return new class extends Migration
             $table->enum('bonus_status', ['deposit', 'withdrawal'])->nullable();
 
             $table->string('source')->nullable(); // order, referral, admin
-            $table->unsignedBigInteger('reference_id')->nullable();
+            $table->string('reference_id')->nullable();
 
             $table->text('note')->nullable();
             $table->timestamps();

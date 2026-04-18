@@ -153,6 +153,7 @@ class CartController extends Controller
                         'quantity'          => $requestedQty,
                         'price'             => $finalPrice,
                         'discount'          => $discountAmount,
+                        'point'             => $product->point,
                     ]);
                 }
 

@@ -42,6 +42,7 @@ class PaymentController extends Controller
         }
 
         $amount = $cartItems->sum(fn($item) => $item->price * $item->quantity);
+        $point = $cartItems->sum(fn($item) => $item->point * $item->quantity);
 
         $tran_id = uniqid('SSLCZ_');
 
@@ -53,6 +54,7 @@ class PaymentController extends Controller
             'currency' => 'BDT',
             'status' => 'Pending',
             'amount' => $amount,
+            'point' => (int) $point,
             'paid_at' => now()->toDateString(),
         ]);
 

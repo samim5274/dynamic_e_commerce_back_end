@@ -19,6 +19,7 @@ class Order extends Model
         'status',
         'amount',
         'slug',
+        'point',
         'paid_at',
     ];
 

@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Order;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\Order;
+use App\Models\PointTransaction;
 
 class OrderController extends Controller
 {
@@ -58,12 +61,10 @@ class OrderController extends Controller
     public function updateStatus(Request $request, $reg)
     {
         try {
-            // Validate request
             $validated = $request->validate([
                 'status' => ['required', 'string', 'in:pending,processing,delivered,cancelled']
             ]);
 
-            // Find order
             $order = Order::where('reg', $reg)->first();
 
             if (!$order) {
@@ -73,7 +74,6 @@ class OrderController extends Controller
                 ], 404);
             }
 
-            // Check if already same status
             if ($order->status === $validated['status']) {
                 return response()->json([
                     'success' => true,
@@ -81,10 +81,33 @@ class OrderController extends Controller
                 ], 200);
             }
 
-            // Update
+            DB::beginTransaction();
+
             $order->update([
                 'status' => $validated['status']
             ]);
+
+            if (strtolower(trim($validated['status'])) === 'delivered') {
+
+                $exists = PointTransaction::where('reference_id', $order->reg)
+                    ->where('source', 'purchase')
+                    ->exists();
+
+                if (!$exists) {
+                    PointTransaction::create([
+                        'user_id'        => $order->user_id,
+                        'type'           => 'earn',
+                        'points'         => (int) $order->point,
+                        'bonus_amount'   => 0,
+                        'bonus_status'   => 'deposit',
+                        'source'         => 'purchase',
+                        'reference_id'   => $order->reg,
+                        'note'           => 'Points added for delivered order',
+                    ]);
+                }
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -94,11 +117,17 @@ class OrderController extends Controller
 
         } catch (\Throwable $e) {
 
-            \Log::error('Order status update error: ' . $e->getMessage());
+            DB::rollBack();
+
+            Log::error('ORDER STATUS ERROR', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update order status. Please try again later.',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

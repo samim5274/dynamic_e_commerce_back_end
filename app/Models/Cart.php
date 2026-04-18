@@ -18,6 +18,7 @@ class Cart extends Model
         'quantity',
         'price',
         'discount',
+        'point',
         'note',
     ];
 
@@ -51,7 +52,9 @@ class Cart extends Model
 
     public function scopeCurrent($query, $regId)
     {
-        return $query->where('user_id', auth()->id())
-                     ->orWhere('reg', $regId);
+        return $query->where(function ($q) use ($regId) {
+            $q->where('user_id', auth()->id())
+            ->where('reg', $regId);
+        });
     }
 }

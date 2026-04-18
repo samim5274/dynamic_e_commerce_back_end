@@ -25,6 +25,7 @@ return new class extends Migration
             $table->double('amount')->default(0);
 
             $table->string('slug')->unique();
+            $table->integer('point')->default(0);
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
         });

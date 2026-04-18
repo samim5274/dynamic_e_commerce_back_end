@@ -1,13 +1,25 @@
-$table->id();
-            $table->string('reg')->unique();
-            $table->date('date');
-            $table->foreignId('user_id')->constrained('users')->onDelete('restrict');
-            $table->string('transaction_id')->nullable()->unique();
-            // unpaid|pending|paid|failed|canceled|processing
-            $table->enum('status', ['Pending', 'Cancelled', 'Processing', 'Delivered'])->default('Pending');
-            $table->decimal('total', 10, 2)->default(0);
-            $table->timestamp('paid_at')->nullable();
-            $table->timestamps();
+Sandbox Environment
 
+All the transaction made using this environment are counted as test transaction and has no effect with accounting, URL starts with https://sandbox.sslcommerz.com.
 
-            
+Test Credit Card Account Numbers
+
+VISA:
+
+    Card Number: 4111111111111111
+    Exp: 12/26
+    CVV: 111
+
+Mastercard:
+
+    Card Number: 5111111111111111
+    Exp: 12/26
+    CVV: 111
+
+American Express:
+
+    Card Number: 371111111111111
+    Exp: 12/26
+    CVV: 111
+
+Mobile OTP: 111111 or 123456

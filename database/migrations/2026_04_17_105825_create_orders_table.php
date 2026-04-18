@@ -16,10 +16,13 @@ return new class extends Migration
             $table->string('reg')->unique();
             $table->date('date');
             $table->foreignId('user_id')->constrained('users')->onDelete('restrict');
+
             $table->string('transaction_id')->nullable()->unique();
+            $table->string('currency', 20)->nullable();
+
             // unpaid|pending|paid|failed|canceled|processing
             $table->enum('status', ['Pending', 'Cancelled', 'Processing', 'Delivered'])->default('Pending');
-            $table->decimal('total', 10, 2)->default(0);
+            $table->double('amount')->default(0);
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
         });

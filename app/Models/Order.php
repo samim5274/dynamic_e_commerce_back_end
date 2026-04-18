@@ -14,8 +14,9 @@ class Order extends Model
         'date',
         'user_id',
         'transaction_id',
+        'currency',
         'status',
-        'total',
+        'amount',
         'paid_at',
     ];
 }

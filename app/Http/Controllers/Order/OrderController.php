@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+use App\Models\User;
 use App\Models\Order;
 use App\Models\PointTransaction;
 
@@ -128,6 +129,23 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getCustomerDetails($user_id){
+        try{
+            $customer = User::where('user_id', $user_id)->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer Details fetched successfully.',
+                'data' => $customer,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch customer details. Please try again later.',
             ], 500);
         }
     }

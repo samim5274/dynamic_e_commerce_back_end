@@ -144,6 +144,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/create', [CustomerController::class, 'createUser']);
             Route::post('/assign-tree', [CustomerController::class, 'assignTree']);
         });
+
+        Route::prefix('orders')->group(function () {
+            Route::get('/', [CustomerController::class, 'getOrders']);
+        });
     });
 });
 

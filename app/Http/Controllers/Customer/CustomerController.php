@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 use App\Models\User;
 use App\Services\PointService;
+use App\Models\Order;
 
 class CustomerController extends Controller
 {
@@ -424,5 +426,23 @@ class CustomerController extends Controller
         $parent = User::find($rootUser->parent_id);
 
         return $parent ? $this->isDescendant($parent, $user) : false;
+    }
+
+    public function getOrders(){
+        try{
+            $userId = Auth::id();
+            $orders = Order::with('user')->where('user_id', $userId)->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Orders fetched successfully.',
+                'data' => $orders,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch orders. Please try again later.',
+            ], 500);
+        }
     }
 }

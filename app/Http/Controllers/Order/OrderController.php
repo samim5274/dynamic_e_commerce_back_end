@@ -16,7 +16,7 @@ class OrderController extends Controller
     public function index(){
         try{
             $orders = Order::with('user')
-                // ->where('status', '!=' , 'Delivered')
+                ->where('status', '!=' , 'Delivered')
                 ->get();
 
             return response()->json([

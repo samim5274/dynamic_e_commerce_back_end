@@ -188,12 +188,12 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-use App\Http\Controllers\Payment\PaymentController;
-Route::middleware('auth:sanctum')->group(function () {
-    Route::prefix('pay')->group(function () {
-        Route::post('/{reg}', [PaymentController::class, 'index']);
-    });
-});
+// use App\Http\Controllers\Payment\PaymentController;
+// Route::middleware('auth:sanctum')->group(function () {
+//     Route::prefix('pay')->group(function () {
+
+//     });
+// });
 
 
 
@@ -217,5 +217,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{reg}', [OrderController::class, 'getOrderDetails']);
         Route::post('/update-status/{reg}', [OrderController::class, 'updateStatus']);
         Route::get('/customer/{user_id}', [OrderController::class, 'getCustomerDetails']);
+        Route::post('/confirm/{reg}', [OrderController::class, 'confirmOrder']);
     });
 });

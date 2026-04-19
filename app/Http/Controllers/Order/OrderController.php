@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 use App\Models\User;
 use App\Models\Order;
 use App\Models\PointTransaction;
+use App\Models\Cart;
 
 class OrderController extends Controller
 {
@@ -31,6 +34,67 @@ class OrderController extends Controller
                 'message' => 'Failed to fetch orders. Please try again later.',
             ], 500);
         }
+    }
+
+    public function confirmOrder(Request $request, $reg)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized user',
+            ], 401);
+        }
+
+        $cartItems = Cart::where('reg', $reg)->get();
+        if (!$cartItems->count()) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cart items is empty.",
+            ]);
+        }
+
+        $order = Order::where('reg', $reg)->first();
+        if ($order) {
+            return response()->json([
+                'success' => false,
+                'message' => "Order already created.",
+            ]);
+        }
+
+        $amount = $cartItems->sum(fn($item) => $item->price * $item->quantity);
+        $point = $cartItems->sum(fn($item) => $item->point * $item->quantity);
+        $discount = $cartItems->sum(fn($item) => $item->discount * $item->quantity);
+
+        $tran_id = uniqid('SSLCZ_');
+
+        $order = Order::create([
+            'reg' => $reg,
+            'date' => now()->toDateString(),
+            'user_id' => $user->id,
+
+            'amount' => $amount,
+            'discount' => $discount,
+            'payable_amount' => $amount,
+            'currency' => 'BDT',
+            'point' => (int) $point,
+
+            'payment_method' => "Cash",
+            'transaction_id' => $tran_id,
+            'is_paid' => false,
+            'paid_at' => NULL,
+
+            'status' => 'Pending',
+
+            'contact_number' => $user->phone,
+            'shipping_address' => $user->present_address,
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => "Your order is confirmed. Thanks You.",
+        ]);
+
     }
 
     public function statusFilter(){
@@ -80,8 +144,32 @@ class OrderController extends Controller
     public function updateStatus(Request $request, $reg)
     {
         try {
+            $statusInput = trim($request->status);
+
+            $validStatuses = [
+                'pending'          => 'Pending',
+                'confirmed'        => 'Confirmed',
+                'processing'       => 'Processing',
+                'picked'           => 'Picked',
+                'shipped'          => 'Shipped',
+                'out for delivery' => 'Out for Delivery',
+                'delivered'        => 'Delivered',
+                'cancelled'        => 'Cancelled',
+                'failed'           => 'Failed',
+                'returned'         => 'Returned',
+            ];
+
+            $lowerInput = strtolower($statusInput);
+            $normalizedStatus = $validStatuses[$lowerInput] ?? $statusInput;
+
+            $request->merge(['status' => $normalizedStatus]);
+
             $validated = $request->validate([
-                'status' => ['required', 'string', 'in:pending,processing,delivered,cancelled']
+                'status' => [
+                    'required',
+                    'string',
+                    'in:' . implode(',', array_values($validStatuses))
+                ]
             ]);
 
             $order = Order::where('reg', $reg)->first();
@@ -96,18 +184,37 @@ class OrderController extends Controller
             if ($order->status === $validated['status']) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Order status already updated.',
+                    'message' => 'Order status is already ' . $order->status,
                 ], 200);
             }
 
             DB::beginTransaction();
 
-            $order->update([
-                'status' => $validated['status']
-            ]);
+            $currentStatus = $validated['status'];
+            $statusKey = strtolower($currentStatus);
 
-            if (strtolower(trim($validated['status'])) === 'delivered') {
+            $timestampMapping = [
+                'confirmed' => 'confirmed_at',
+                'shipped'   => 'shipped_at',
+                'delivered' => 'delivered_at',
+                'cancelled' => 'cancelled_at',
+            ];
 
+            $updateData = ['status' => $currentStatus];
+
+            if (isset($timestampMapping[$statusKey])) {
+                $column = $timestampMapping[$statusKey];
+                $updateData[$column] = now()->toDateString();
+            }
+
+            if ($statusKey === 'delivered') {
+                $updateData['paid_at'] = now()->toDateString();
+                $updateData['is_paid'] = 1;
+            }
+
+            $order->update($updateData);
+
+            if ($statusKey === 'delivered') {
                 $exists = PointTransaction::where('reference_id', $order->reg)
                     ->where('source', 'purchase')
                     ->exists();
@@ -131,22 +238,26 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Order status updated successfully.',
-                'data' => $order
+                'data' => $order->fresh()
             ], 200);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid status selected.',
+                'errors'  => $e->errors()
+            ], 422);
         } catch (\Throwable $e) {
-
             DB::rollBack();
-
             Log::error('ORDER STATUS ERROR', [
                 'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
+                'line'    => $e->getLine(),
+                'file'    => $e->getFile(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Internal Server Error. Please try again.',
             ], 500);
         }
     }

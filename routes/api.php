@@ -209,6 +209,7 @@ use App\Http\Controllers\Order\OrderController;
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
+        Route::get('/status', [OrderController::class, 'statusFilter']);
         Route::get('/{reg}', [OrderController::class, 'getOrderDetails']);
         Route::post('/update-status/{reg}', [OrderController::class, 'updateStatus']);
         Route::get('/customer/{user_id}', [OrderController::class, 'getCustomerDetails']);

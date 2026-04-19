@@ -17,7 +17,25 @@ class OrderController extends Controller
         try{
             $orders = Order::with('user')
                 ->where('status', '!=' , 'Delivered')
+                ->where('status', '!=' , 'Cancelled')
                 ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Orders fetched successfully.',
+                'data' => $orders,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch orders. Please try again later.',
+            ], 500);
+        }
+    }
+
+    public function statusFilter(){
+        try{
+            $orders = Order::with('user')->get();
 
             return response()->json([
                 'success' => true,

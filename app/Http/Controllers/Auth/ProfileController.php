@@ -83,13 +83,18 @@ class ProfileController extends Controller
 
     public function treeUserLogRoot(Request $request)
     {
-
+        $withRelations = [
+            'children',
+            'pointTransactions' => function($query) {
+                $query->orderBy('id', 'desc');
+            }
+        ];
         $rootId = $request->query('root_id');
 
         if ($rootId) {
-            $root = User::with('children')->find($rootId);
+            $root = User::with($withRelations)->find($rootId);
         } else {
-            $root = User::with('children')
+            $root = User::with($withRelations)
                 ->where('role', 'super_admin')
                 ->first();
         }
@@ -240,7 +245,7 @@ class ProfileController extends Controller
                 // save both
                 $user->save();
                 $rootUser->save();
-                
+
                 $user->refresh();
 
                 // MLM logic

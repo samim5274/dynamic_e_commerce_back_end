@@ -98,6 +98,35 @@ class User extends Authenticatable
         return $this->hasMany(PointTransaction::class);
     }
 
+    protected $appends = ['total_points', 'total_deposit_bonus', 'total_withdraw_bonus', 'bonus_balance'];
+
+    public function getTotalDepositBonusAttribute()
+    {
+        return $this->pointTransactions()
+            ->where('bonus_status', 'deposit')
+            ->sum('bonus_amount') ?? 0;
+    }
+
+    public function getTotalWithdrawBonusAttribute()
+    {
+        return $this->pointTransactions()
+            ->where('bonus_status', 'withdraw')
+            ->sum('bonus_amount') ?? 0;
+    }
+
+    public function getBonusBalanceAttribute()
+    {
+        $deposit = $this->total_deposit_bonus;
+        $withdraw = $this->total_withdraw_bonus;
+
+        return number_format($deposit - $withdraw, 2, '.', '');
+    }
+
+    public function getTotalPointsAttribute()
+    {
+        return $this->pointTransactions->sum('points') ?? 0;
+    }
+
     // Order
     public function user()
     {

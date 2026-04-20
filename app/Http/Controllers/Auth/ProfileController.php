@@ -81,24 +81,34 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function treeUser(){
-        $root = User::with(['leftChild', 'rightChild'])
+    public function treeUserLogRoot(Request $request)
+    {
+
+        $rootId = $request->query('root_id');
+
+        if ($rootId) {
+            $root = User::with('children')->find($rootId);
+        } else {
+            $root = User::with('children')
                 ->where('role', 'super_admin')
                 ->first();
+        }
 
-        if(!$root){
+        if (!$root) {
             return response()->json([
                 'success' => false,
-                'message' => 'No root user found',
+                'message' => 'User not found',
                 'data' => null
             ]);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Tree fetched successfully',
             'data' => $root
         ]);
+    }
+
+    public function treeUser(){
     }
 
     public function getUsers(){
@@ -230,12 +240,16 @@ class ProfileController extends Controller
                 // save both
                 $user->save();
                 $rootUser->save();
+                
+                $user->refresh();
 
                 // MLM logic
                 $pointService->referralBonus($user);
                 $pointService->updateCounts($user);
 
             });
+
+
 
             return response()->json([
                 'success' => true,
@@ -248,23 +262,6 @@ class ProfileController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
-
-
-
-
-
-
-
-
-        // // MLM logic
-        // $pointService->referralBonus($user);
-        // $pointService->updateCounts($user);
-
-        // return response()->json([
-        //     'success' => true,
-        //     'data' => $user,
-        //     'message' => 'User created successfully'
-        // ]);
     }
 
     public function getRootUsers(Request $request){

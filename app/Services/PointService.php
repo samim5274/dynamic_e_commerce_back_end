@@ -47,7 +47,7 @@ class PointService
     // 3. Update Up lines Count
     public function updateUpLineCounts($user)
     {
-        $parent = $user->parentUser;
+        $parent = $user->parent;
         $current = $user;
 
         while ($parent) {
@@ -63,7 +63,7 @@ class PointService
             $this->checkMatching($parent);
 
             $current = $parent;
-            $parent = $parent->parentUser;
+            $parent = $parent->parent;
         }
     }
 
@@ -102,7 +102,7 @@ class PointService
     // 5. Propagation Match
     public function propagateMatch($user, $pairs)
     {
-        $parent = $user->parentUser;
+        $parent = $user->parent;
         $current = $user;
 
         while ($parent) {
@@ -135,7 +135,7 @@ class PointService
             // }
 
             $current = $parent;
-            $parent = $parent->parentUser;
+            $parent = $parent->parent;
         }
     }
 

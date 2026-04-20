@@ -69,8 +69,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 // get tree user
-Route::get('/tree-user', [ProfileController::class, 'treeUser']);
-
+Route::middleware(['auth:sanctum'])->group(function (){
+    Route::get('/tree-user-log-root', [ProfileController::class, 'treeUserLogRoot']);
+    Route::get('/tree-user', [ProfileController::class, 'treeUser']);
+});
 
 
 

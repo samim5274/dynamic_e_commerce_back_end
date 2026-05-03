@@ -181,7 +181,7 @@ class ProfileController extends Controller
             'religion'          => ['nullable','string','max:50'],
             'photo'             => ['nullable','image','max:2048'],
             'refer_id'          => ['required','string'],
-            'product_id' => ['required', 'exists:products,id'],
+            'product_id'        => ['required', 'exists:products,id'],
 
             // Password Validation
             'password' => [

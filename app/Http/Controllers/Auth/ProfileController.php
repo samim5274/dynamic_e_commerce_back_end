@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
@@ -155,6 +156,17 @@ class ProfileController extends Controller
             'photo'             => ['nullable','image','max:2048'],
             'refer_id'          => ['required','string'],
 
+            // Password Validation
+            'password' => [
+                'required',
+                'confirmed', // password_confirmation check করবে
+                Password::min(8)
+                    ->letters()     // Character
+                    ->numbers()     // Number
+                    ->symbols()     // Special char
+                    ->mixedCase(),  // Upper + Lower case
+            ],
+
             'root_user_id'      => ['required','exists:users,id'],
             'position'          => ['required','in:left,right'],
         ]);
@@ -181,9 +193,14 @@ class ProfileController extends Controller
         // Profile completed simple rule
         $data['is_profile_completed'] = !empty(trim($data['name'])) && !empty(trim($data['phone'] ?? ''));
 
+        // Passowr hash make
+        $data['password'] = Hash::make($data['password']);
 
         // Create new user
         $user = User::create($data);
+
+        $user->user_id = 'DBMBL' . str_pad($user->id, 3, '0', STR_PAD_LEFT);
+        $user->save();
 
         // Add photo_url for frontend
         $user->photo_url = $user->photo ? asset('storage/'.$user->photo) : null;

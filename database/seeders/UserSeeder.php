@@ -35,6 +35,7 @@ class UserSeeder extends Seeder
             ['email' => 'adminuser@gmail.com'],
             [
                 'name' => 'Admin User',
+                'user_id' => 'DBMBL001',
                 'phone' => '01711111112',
                 'password' => Hash::make('password'),
                 'role' => 'admin',

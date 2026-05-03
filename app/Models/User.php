@@ -31,18 +31,16 @@ class User extends Authenticatable
     {
         static::creating(function ($user) {
             if (empty($user->password)) {
-                // $user->password = Hash::make('password');
-                $user->password = Hash::make(bin2hex(random_bytes(4)));
+                $user->password = Hash::make('password');
+                // $user->password = Hash::make(bin2hex(random_bytes(4)));
             }
 
-            $attempt = 0;
-
-            do {
-                $userId = 'DBMBL-' . strtoupper(Str::random(10));
-                $attempt++;
-            } while (User::where('user_id', $userId)->exists() && $attempt < 5);
-
-            $user->user_id = $userId;
+            // $attempt = 0;
+            // do {
+            //     $userId = 'DBMBL00' . strtoupper(Str::random(10));
+            //     $attempt++;
+            // } while (User::where('user_id', $userId)->exists() && $attempt < 5);
+            // $user->user_id = $userId;
         });
     }
 

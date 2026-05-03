@@ -11,7 +11,12 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\User;
+use App\Models\Product;
+use App\Models\Cart;
+use App\Models\ProductVariant;
+use App\Models\Order;
 use App\Services\PointService;
+use App\Services\RegGenerator;
 
 class ProfileController extends Controller
 {
@@ -139,6 +144,27 @@ class ProfileController extends Controller
         }
     }
 
+    public function getProducts()
+    {
+        try {
+            $products = Product::where('point', '>=', 100)
+                    ->latest()
+                    ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetched all 100 points products',
+                'data' => $products,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function createUser(Request $request, PointService $pointService)
     {
         // Validate input
@@ -155,6 +181,7 @@ class ProfileController extends Controller
             'religion'          => ['nullable','string','max:50'],
             'photo'             => ['nullable','image','max:2048'],
             'refer_id'          => ['required','string'],
+            'product_id' => ['required', 'exists:products,id'],
 
             // Password Validation
             'password' => [
@@ -268,6 +295,9 @@ class ProfileController extends Controller
                 // MLM logic
                 $pointService->referralBonus($user);
                 $pointService->updateCounts($user);
+
+                // Order make for opeing account
+                $reg = $this->addProductToCartForUser($user, $data['product_id']);
 
             });
 
@@ -391,6 +421,141 @@ class ProfileController extends Controller
         $parent = User::find($rootUser->parent_id);
 
         return $parent ? $this->isDescendant($parent, $user) : false;
+    }
+
+    private function addProductToCartForUser($user, $productId, $variantId = null)
+    {
+        $reg = RegGenerator::generateOrderReg($user->id);
+
+        if (!$reg) {
+            throw new \Exception('Failed to generate cart session.');
+        }
+
+        // Lock product
+        $product = Product::lockForUpdate()->findOrFail($productId);
+
+        // ======================
+        // Variant Handling
+        // ======================
+        $variant = null;
+
+        if (!empty($variantId)) {
+            $variant = ProductVariant::lockForUpdate()
+                ->where('id', $variantId)
+                ->where('product_id', $product->id)
+                ->firstOrFail();
+        } else {
+            $variant = ProductVariant::where('product_id', $product->id)
+                ->orderBy('id', 'asc')
+                ->first(); // auto first variant
+        }
+
+        // ======================
+        // Price Logic
+        // ======================
+        if ($variant) {
+            $basePrice = $variant->price ?? $product->price;
+            $variantDiscount = $variant->discount_price ?? 0;
+
+            $finalPrice = $variantDiscount > 0
+                ? $basePrice - $variantDiscount
+                : $basePrice;
+
+            $discountAmount = $variantDiscount > 0
+                ? $variantDiscount
+                : 0;
+
+        } else {
+            $finalPrice = $product->price;
+            $discountAmount = 0;
+        }
+
+        // ======================
+        // Find Cart Item
+        // ======================
+        $query = Cart::where('reg', $reg)
+            ->where('product_id', $product->id);
+
+        if ($variant) {
+            $query->where('variant_id', $variant->id);
+        } else {
+            $query->whereNull('variant_id');
+        }
+
+        $cartItem = $query->first();
+
+        // ======================
+        // Save Cart
+        // ======================
+        if ($cartItem) {
+            $cartItem->increment('quantity', 1);
+
+            // optional update price (if changed)
+            $cartItem->update([
+                'price' => $finalPrice,
+                'discount' => $discountAmount,
+            ]);
+
+        } else {
+            Cart::create([
+                'reg'        => $reg,
+                'user_id'    => $user->id,
+                'product_id' => $product->id,
+                'variant_id' => $variant?->id,
+                'quantity'   => 1,
+                'price'      => $finalPrice,
+                'discount'   => $discountAmount,
+                'point'      => $product->point ?? 0,
+            ]);
+        }
+
+        $order = $this->ensureOrderExists($user, $reg);
+
+        return $reg;
+    }
+
+    private function ensureOrderExists($user, $reg)
+    {
+        $order = Order::where('reg', $reg)->first();
+
+        if (!$order) {
+
+            $cartItems = Cart::where('reg', $reg)->get();
+
+            if (!$cartItems->count()) {
+                return null;
+            }
+
+            $amount = $cartItems->sum(fn($item) => $item->price * $item->quantity);
+            $point = $cartItems->sum(fn($item) => $item->point * $item->quantity);
+            $discount = $cartItems->sum(fn($item) => $item->discount * $item->quantity);
+
+            $tran_id = uniqid('SSLCZ_');
+
+            $order = Order::create([
+                'reg' => $reg,
+                'date' => now()->toDateString(),
+                'user_id' => $user->id,
+
+                'amount' => $amount,
+                'discount' => $discount,
+                'payable_amount' => $amount - $discount,
+                'currency' => 'BDT',
+                'point' => (int) $point,
+
+                'payment_method' => "Cash",
+                'transaction_id' => $tran_id,
+                'is_paid' => false,
+                'paid_at' => null,
+
+                'status' => 'Pending',
+
+                'contact_number' => $user->phone,
+                'shipping_address' => $user->present_address,
+            ]);
+        }
+
+        return $order;
     }
 
 }

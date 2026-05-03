@@ -62,6 +62,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::prefix('users')->group(function () {
         Route::get('/', [ProfileController::class, 'getUsers']);
+        Route::get('/products', [ProfileController::class, 'getProducts']);
         Route::get('/root', [ProfileController::class, 'getRootUsers']);
         Route::post('/create', [ProfileController::class, 'createUser']);
         Route::post('/assign-tree', [ProfileController::class, 'assignTree']);

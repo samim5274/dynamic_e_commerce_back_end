@@ -9,6 +9,8 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 use App\Models\User;
 use App\Models\Product;
@@ -165,10 +167,160 @@ class ProfileController extends Controller
         }
     }
 
+    // public function createUser(Request $request, PointService $pointService)
+    // {
+    //     // Validate input
+    //     $data = $request->validate([
+    //         'name'              => ['required','string','max:255'],
+    //         'email'             => ['required','email','max:255','unique:users,email'],
+    //         'phone'             => ['nullable','string','max:30','unique:users,phone'],
+    //         'dob'               => ['nullable','date'],
+    //         'gender'            => ['nullable','in:male,female,other'],
+    //         'blood_group'       => ['nullable','string','max:10'],
+    //         'present_address'   => ['nullable','string','max:500'],
+    //         'permanent_address' => ['nullable','string','max:500'],
+    //         'national_id'       => ['nullable','string','max:50'],
+    //         'religion'          => ['nullable','string','max:50'],
+    //         'photo'             => ['nullable','image','max:2048'],
+    //         'refer_id'          => ['required','string'],
+    //         'product_id'        => ['required', 'exists:products,id'],
+
+    //         // Password Validation
+    //         'password' => [
+    //             'required',
+    //             'confirmed', // password_confirmation check করবে
+    //             Password::min(8)
+    //                 ->letters()     // Character
+    //                 ->numbers()     // Number
+    //                 ->symbols()     // Special char
+    //                 ->mixedCase(),  // Upper + Lower case
+    //         ],
+
+    //         'root_user_id'      => ['required','exists:users,id'],
+    //         'position'          => ['required','in:left,right'],
+    //     ]);
+
+    //     // Handle photo upload
+    //     if ($request->hasFile('photo')) {
+    //         $path = $request->file('photo')->store('users', 'public');
+    //         $data['photo'] = $path;
+    //     }
+
+    //     // Check reference user
+    //     if (!empty($data['refer_id'])) {
+    //         $referUser = User::where('user_id', $data['refer_id'])->first();
+    //         if (!$referUser) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Reference not found. Please try again.',
+    //             ], 422);
+    //         }
+
+    //         $data['refer_id'] = $referUser->id;
+    //     }
+
+    //     // Profile completed simple rule
+    //     $data['is_profile_completed'] = !empty(trim($data['name'])) && !empty(trim($data['phone'] ?? ''));
+
+    //     // Passowr hash make
+    //     $data['password'] = Hash::make($data['password']);
+
+    //     // Create new user
+    //     $user = User::create($data);
+
+    //     $user->user_id = 'DBMBL' . str_pad($user->id, 3, '0', STR_PAD_LEFT);
+    //     $user->save();
+
+    //     // Add photo_url for frontend
+    //     $user->photo_url = $user->photo ? asset('storage/'.$user->photo) : null;
+
+
+
+
+
+
+
+
+    //     // After create user then assign in tree
+    //     $userId = $user->id;
+    //     $userRootId = $data['root_user_id'];
+
+    //     // prevent self assignment
+    //     if ($userId == $userRootId) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'User and Root User cannot be the same.',
+    //         ], 422);
+    //     }
+
+    //     try{
+    //         DB::transaction(function () use ($data, $userId, $userRootId, $pointService) {
+
+    //             $position = $data['position'];
+
+    //             $user = User::where('id', $userId)->lockForUpdate()->firstOrFail();
+    //             $rootUser = User::where('id', $userRootId)->lockForUpdate()->firstOrFail();
+
+    //             // already has parent
+    //             if ($user->parent_id) {
+    //                 throw new \Exception('User already has a parent.');
+    //             }
+
+    //             if ($this->isDescendant($rootUser, $user)) {
+    //                 throw new \Exception('Circular reference detected.');
+    //             }
+
+    //             // position check
+    //             if ($data['position'] === 'left' && $rootUser->left_child_id) {
+    //                 throw new \Exception('Left position already occupied.');
+    //             }
+    //             if ($data['position'] === 'right' && $rootUser->right_child_id) {
+    //                 throw new \Exception('Right position already occupied.');
+    //             }
+
+    //             // assign parent
+    //             $user->parent_id = $rootUser->id;
+
+    //             // assign child to root user
+    //             if ($data['position'] == 'left') {
+    //                 $rootUser->left_child_id = $user->id;
+    //             } else {
+    //                 $rootUser->right_child_id = $user->id;
+    //             }
+
+    //             // save both
+    //             $user->save();
+    //             $rootUser->save();
+
+    //             $user->refresh();
+
+    //             // MLM logic
+    //             $pointService->referralBonus($user);
+    //             $pointService->updateCounts($user);
+
+    //             // Order make for opeing account
+    //             $reg = $this->addProductToCartForUser($user, $data['product_id']);
+
+    //         });
+
+
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'User assigned successfully.',
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => $e->getMessage(),
+    //         ], 422);
+    //     }
+    // }
+
     public function createUser(Request $request, PointService $pointService)
     {
-        // Validate input
-        $data = $request->validate([
+        $validated = $request->validate([
             'name'              => ['required','string','max:255'],
             'email'             => ['required','email','max:255','unique:users,email'],
             'phone'             => ['nullable','string','max:30','unique:users,phone'],
@@ -198,122 +350,94 @@ class ProfileController extends Controller
             'position'          => ['required','in:left,right'],
         ]);
 
-        // Handle photo upload
-        if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('users', 'public');
-            $data['photo'] = $path;
-        }
+        $photoPath = null;
 
-        // Check reference user
-        if (!empty($data['refer_id'])) {
-            $referUser = User::where('user_id', $data['refer_id'])->first();
-            if (!$referUser) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Reference not found. Please try again.',
-                ], 422);
-            }
+        try {
+            return DB::transaction(function () use ($request, $validated, $pointService, &$photoPath) {
+                
+                // Find refer user
+                $referUser = User::where('user_id', $validated['refer_id'])->firstOrFail();
 
-            $data['refer_id'] = $referUser->id;
-        }
-
-        // Profile completed simple rule
-        $data['is_profile_completed'] = !empty(trim($data['name'])) && !empty(trim($data['phone'] ?? ''));
-
-        // Passowr hash make
-        $data['password'] = Hash::make($data['password']);
-
-        // Create new user
-        $user = User::create($data);
-
-        $user->user_id = 'DBMBL' . str_pad($user->id, 3, '0', STR_PAD_LEFT);
-        $user->save();
-
-        // Add photo_url for frontend
-        $user->photo_url = $user->photo ? asset('storage/'.$user->photo) : null;
-
-
-
-
-
-
-
-
-        // After create user then assign in tree
-        $userId = $user->id;
-        $userRootId = $data['root_user_id'];
-
-        // prevent self assignment
-        if ($userId == $userRootId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User and Root User cannot be the same.',
-            ], 422);
-        }
-
-        try{
-            DB::transaction(function () use ($data, $userId, $userRootId, $pointService) {
-
-                $position = $data['position'];
-
-                $user = User::where('id', $userId)->lockForUpdate()->firstOrFail();
-                $rootUser = User::where('id', $userRootId)->lockForUpdate()->firstOrFail();
-
-                // already has parent
-                if ($user->parent_id) {
-                    throw new \Exception('User already has a parent.');
+                // Upload photo
+                if ($request->hasFile('photo')) {
+                    $photoPath = $request->file('photo')->store('users', 'public');
                 }
 
-                if ($this->isDescendant($rootUser, $user)) {
-                    throw new \Exception('Circular reference detected.');
-                }
+                // user create
+                $user = User::create(array_merge($validated, [
+                    'password' => Hash::make($validated['password']),
+                    'refer_id' => $referUser->id,
+                    'photo'    => $photoPath,
+                    'is_profile_completed' => !empty($validated['phone']),
+                ]));
 
-                // position check
-                if ($data['position'] === 'left' && $rootUser->left_child_id) {
-                    throw new \Exception('Left position already occupied.');
-                }
-                if ($data['position'] === 'right' && $rootUser->right_child_id) {
-                    throw new \Exception('Right position already occupied.');
-                }
+                // uniqure user id
+                $user->update([
+                    'user_id' => 'DBMBL' . str_pad($user->id, 4, '0', STR_PAD_LEFT)
+                ]);
 
-                // assign parent
-                $user->parent_id = $rootUser->id;
+                // assign tree
+                $this->assignToTree($user, $validated['root_user_id'], $validated['position']);
 
-                // assign child to root user
-                if ($data['position'] == 'left') {
-                    $rootUser->left_child_id = $user->id;
-                } else {
-                    $rootUser->right_child_id = $user->id;
-                }
-
-                // save both
-                $user->save();
-                $rootUser->save();
-
-                $user->refresh();
-
-                // MLM logic
+                // MLM update
                 $pointService->referralBonus($user);
                 $pointService->updateCounts($user);
 
-                // Order make for opeing account
-                $reg = $this->addProductToCartForUser($user, $data['product_id']);
+                // Product order
+                $this->addProductToCartForUser($user, $validated['product_id']);
 
+                return response()->json([
+                    'success' => true,
+                    'message' => 'User created and assigned to tree successfully.',
+                    'user_id' => $user->user_id
+                ], 201);
             });
 
-
-
-            return response()->json([
-                'success' => true,
-                'message' => 'User assigned successfully.',
-            ]);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            if ($photoPath) Storage::disk('public')->delete($photoPath);
+            
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => $e->getMessage()
             ], 422);
         }
+    }
+
+    private function assignToTree(User $user, $rootUserId, $position)
+    {
+        // self assign check
+        if ($user->id == $rootUserId) {
+            throw new Exception('A user cannot be their own root parent.');
+        }
+
+        // root user lock Race Condition
+        $rootUser = User::where('id', $rootUserId)->lockForUpdate()->firstOrFail();
+
+        // possition check
+        if ($position === 'left' && $rootUser->left_child_id) {
+            throw new Exception('The left position is already occupied.');
+        }
+        
+        if ($position === 'right' && $rootUser->right_child_id) {
+            throw new Exception('The right position is already occupied.');
+        }
+
+        // method
+        if (method_exists($this, 'isDescendant') && $this->isDescendant($rootUser, $user)) {
+            throw new Exception('Circular reference detected.');
+        }
+
+        // relation update
+        $user->parent_id = $rootUser->id;
+        $user->save();
+
+        if ($position === 'left') {
+            $rootUser->left_child_id = $user->id;
+        } else {
+            $rootUser->right_child_id = $user->id;
+        }
+        
+        $rootUser->save();
     }
 
     public function getRootUsers(Request $request){
@@ -414,13 +538,16 @@ class ProfileController extends Controller
 
     private function isDescendant($rootUser, $user)
     {
-        if (!$rootUser->parent_id) return false;
-
-        if ($rootUser->parent_id == $user->id) return true;
-
-        $parent = User::find($rootUser->parent_id);
-
-        return $parent ? $this->isDescendant($parent, $user) : false;
+        $currentRoot = $rootUser;
+        
+        while ($currentRoot && $currentRoot->parent_id) {
+            if ($currentRoot->parent_id == $user->id) {
+                return true;
+            }
+            $currentRoot = User::find($currentRoot->parent_id);
+        }
+        
+        return false;
     }
 
     private function addProductToCartForUser($user, $productId, $variantId = null)

@@ -225,7 +225,7 @@ class OrderController extends Controller
                         'type'           => 'earn',
                         'points'         => (int) $order->point,
                         'bonus_amount'   => 0,
-                        'bonus_status'   => 'deposit',
+                        'bonus_status'   => 'credit',
                         'source'         => 'purchase',
                         'reference_id'   => $order->reg,
                         'note'           => 'Points added for delivered order',

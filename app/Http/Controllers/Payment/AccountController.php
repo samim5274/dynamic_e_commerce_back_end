@@ -18,7 +18,8 @@ class AccountController extends Controller
         try {
             $userId = Auth::id();
 
-            $pointTransactions = PointTransaction::where('user_id', $userId)
+            $pointTransactions = PointTransaction::with('user')
+                ->where('user_id', $userId)
                 ->latest()
                 ->get();
 

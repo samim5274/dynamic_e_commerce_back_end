@@ -61,14 +61,18 @@ return new class extends Migration
             $table->foreignId('parent_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('left_child_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('right_child_id')->nullable()->constrained('users')->onDelete('set null');
+            
+            // POINT SYSTEM (CORE)
+            $table->bigInteger('left_total_point')->default(0);   // lifetime left
+            $table->bigInteger('right_total_point')->default(0);  // lifetime right
+
+            $table->bigInteger('left_carry_point')->default(0);   // carry ফর future matching
+            $table->bigInteger('right_carry_point')->default(0);  // carry ফর future matching
+
+            $table->bigInteger('own_total_point')->default(0);    // total matched pairs * 100
+
+            // Matching হিসাব
             $table->integer('total_match')->default(0);
-            $table->integer('own_match')->default(0);
-
-            $table->integer('left_match')->default(0);
-            $table->integer('right_match')->default(0);
-
-            $table->integer('left_count')->default(0);
-            $table->integer('right_count')->default(0);
 
             // Security / tokens
             $table->string('tokens', 255)->nullable();

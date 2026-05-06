@@ -18,13 +18,22 @@ class User extends Authenticatable
         'name', 'email', 'user_id', 'phone', 'password', 'role',
         'dob', 'gender', 'blood_group', 'national_id', 'religion', 'is_active',
         'present_address', 'permanent_address', 'photo', 'wallet_balance',
-        'refer_id','is_match','rank',
-        'parent_id', 'left_child_id', 'right_child_id', 'left_count', 'right_count', 'left_match', 'right_match', 'total_match', 'own_match'
+        'refer_id','rank', 'is_match',
+        'parent_id', 'left_child_id', 'right_child_id', 
+        
+        'left_total_point', 'right_total_point',
+        'left_carry_point', 'right_carry_point',
+        'own_total_point', 'total_match'
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+    ];
+
+    protected $appends = [
+        'bonus_balance',
+        'total_points',
     ];
 
     protected static function booted()
@@ -49,87 +58,55 @@ class User extends Authenticatable
         'wallet_balance' => 'decimal:2',
         'dob' => 'date',
         'is_active' => 'boolean',
+        'left_total_point' => 'integer',
+        'right_total_point' => 'integer',
+        'own_total_point' => 'integer', 
+        'total_match' => 'integer',     
     ];
 
-    public function getTotalMatchAttribute()
-    {
-        return $this->own_match + $this->left_match + $this->right_match;
-    }
+    // --- Relationships ---
+    public function parent() { return $this->belongsTo(User::class, 'parent_id'); }
+    
+    public function children() { return $this->hasMany(User::class, 'parent_id')->with('children'); }
 
-    // Parent node
-    public function parent()
-    {
-        return $this->belongsTo(User::class, 'parent_id');
-    }
+    public function leftChild() { return $this->belongsTo(User::class, 'left_child_id')->with(['leftChild', 'rightChild']); }
 
-    public function children()
-    {
-        return $this->hasMany(User::class, 'parent_id')->with('children');
-    }
+    public function rightChild() { return $this->belongsTo(User::class, 'right_child_id')->with(['leftChild', 'rightChild']); }
 
-    // Left child relationship
-    public function leftChild()
-    {
-        return $this->belongsTo(User::class, 'left_child_id')->with(['leftChild', 'rightChild']);
-    }
+    public function referrer() { return $this->belongsTo(User::class, 'refer_id'); }
 
-    // Right child relationship
-    public function rightChild()
-    {
-        return $this->belongsTo(User::class, 'right_child_id')->with(['leftChild', 'rightChild']);
-    }
+    public function referrals() { return $this->hasMany(User::class, 'refer_id'); }
 
-    // Parent (who referred me)
-    public function referrer()
-    {
-        return $this->belongsTo(User::class, 'refer_id');
-    }
+    public function pointTransactions() { return $this->hasMany(PointTransaction::class); }
 
-    // Children (users I referred)
-    public function referrals()
-    {
-        return $this->hasMany(User::class, 'refer_id');
-    }
+    public function orders() { return $this->hasMany(Order::class, 'user_id'); }
 
-    // Point relation
-    public function pointTransactions()
-    {
-        return $this->hasMany(PointTransaction::class);
-    }
+    // --- Accessors (Calculated Fields) ---
 
-    protected $appends = ['total_points', 'total_deposit_bonus', 'total_withdraw_bonus', 'bonus_balance'];
-
-    public function getTotalDepositBonusAttribute()
-    {
-        return $this->pointTransactions()
-            ->where('bonus_status', 'deposit')
-            ->sum('bonus_amount') ?? 0;
-    }
-
-    public function getTotalWithdrawBonusAttribute()
-    {
-        return $this->pointTransactions()
-            ->where('bonus_status', 'withdraw')
-            ->sum('bonus_amount') ?? 0;
-    }
-
+    /**
+     * ১. Bonus Balance (Amount)
+     * ক্যালকুলেশন: মোট ডিপোজিট বোনাস - মোট উইথড্র বোনাস
+     */
     public function getBonusBalanceAttribute()
     {
-        $deposit = $this->total_deposit_bonus;
-        $withdraw = $this->total_withdraw_bonus;
+        $credit = $this->pointTransactions()
+            ->where('bonus_status', 'credit')
+            ->sum('bonus_amount') ?? 0;
+            
+        $debit = $this->pointTransactions()
+            ->where('bonus_status', 'debit')
+            ->sum('bonus_amount') ?? 0;
 
-        return number_format($deposit - $withdraw, 2, '.', '');
+        return number_format($credit - $debit, 2, '.', '');
     }
 
+    /**
+     * ২. Total Points
+     * ট্রানজেকশন টেবিল থেকে সর্বমোট পয়েন্টের যোগফল
+     */
     public function getTotalPointsAttribute()
     {
-        return $this->pointTransactions->sum('points') ?? 0;
-    }
-
-    // Order
-    public function user()
-    {
-        return $this->hasMany(Order::class, 'user_id');
+        return (int) ($this->pointTransactions()->sum('points') ?? 0);
     }
 
 }

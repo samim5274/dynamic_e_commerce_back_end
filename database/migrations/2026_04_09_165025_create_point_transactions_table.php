@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('points');
 
             $table->decimal('bonus_amount', 15, 2)->default(0);
-            $table->enum('bonus_status', ['deposit', 'withdrawal'])->nullable();
+            $table->enum('bonus_status', ['credit', 'debit'])->nullable();
 
             $table->string('source')->nullable(); // order, referral, admin
             $table->string('reference_id')->nullable();

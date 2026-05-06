@@ -193,12 +193,12 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-// use App\Http\Controllers\Payment\PaymentController;
-// Route::middleware('auth:sanctum')->group(function () {
-//     Route::prefix('pay')->group(function () {
-
-//     });
-// });
+use App\Http\Controllers\Payment\AccountController;
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('account')->group(function () {
+        Route::get('/', [AccountController::class, 'index']);
+    });
+});
 
 
 

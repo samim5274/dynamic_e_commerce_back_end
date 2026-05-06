@@ -2,140 +2,169 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
+
 use App\Models\User;
 use App\Models\PointTransaction;
 
 class PointService
 {
     // 1. Referral Bonus
-    public function referralBonus($user, $points = 100)
+    public function referralBonus($user)
     {
-        // start from direct referrer (A)
-        $parent = $user->referrer;
+        DB::transaction(function () use ($user) {
+            
+            $referrerId = $user->referrer_id ?? ($user->referrer ? $user->referrer->id : null);
 
-        while ($parent) {
-
-            // prevent duplicate
-            $exists = PointTransaction::where('user_id', $parent->id)
-                ->where('source', 'referral')
-                ->where('reference_id', $user->id)
-                ->exists();
-
-            if(!$exists){
-                PointTransaction::create([
-                    'user_id' => $parent->id,
-                    'type' => 'earn',
-                    'points' => $points,
-                    'source' => 'referral',
-                    'reference_id' => $user->id,
-                    'note' => 'Referral bonus from user ID - ' . $user->id,
-                ]);
+            if (!$referrerId) {
+                Log::warning("Referral system: No referrer found for user ID - " . $user->id);
+                return; 
             }
 
-            // move up chain
-            $parent = $parent->referrer;
-        }
+            $referrer = User::lockForUpdate()->find($referrerId);
+
+            if ($referrer) {
+                
+                $exists = PointTransaction::where('user_id', $referrer->id)
+                    ->where('source', 'referral')
+                    ->where('reference_id', $user->id)
+                    ->exists();
+
+                if (!$exists) {
+                    
+                    PointTransaction::create([
+                        'user_id'      => $referrer->id,
+                        'type'         => 'bonus',
+                        'points'       => 0, 
+                        'bonus_amount' => 200,
+                        'bonus_status' => 'credit',
+                        'source'       => 'referral',
+                        'reference_id' => $user->id,
+                        'note'         => 'Direct referral bonus from User ID: ' . $user->id,
+                    ]);
+
+                    $referrer->increment('wallet_balance', 200);
+                }
+            }
+        });
     }
 
     // 2. Update Count
     public function updateCounts($user)
     {
-        $this->updateUpLineCounts($user);
-        $this->checkMatching($user);
+        DB::transaction(function () use ($user) {
+
+            $user = User::lockForUpdate()->find($user->id);
+            if (!$user) return;
+
+            $this->addPointsToUpline($user, 100);
+            $this->addReferralPointsToUpline($user, 100);
+        });
     }
 
-    // 3. Update Up lines Count
-    public function updateUpLineCounts($user)
+    // 4. Add point to upline
+    public function addPointsToUpline($user, $points = 100)
     {
-        $parent = $user->parent;
         $current = $user;
 
-        while ($parent) {
+        while ($current->parent_id) {
 
+            $parent = User::lockForUpdate()->find($current->parent_id);
+            if (!$parent) break;
+
+            // LEFT SIDE
             if ($current->id == $parent->left_child_id) {
-                $parent->increment('left_count', 1);
+                $parent->left_total_point += $points;
+                $parent->left_carry_point += $points;
             }
 
+            // RIGHT SIDE
             if ($current->id == $parent->right_child_id) {
-                $parent->increment('right_count', 1);
+                $parent->right_total_point += $points;
+                $parent->right_carry_point += $points;
             }
 
-            $this->checkMatching($parent);
+            // SAVE FIRST
+            $parent->save();
+
+            // MATCH AFTER SAVE
+            $this->processMatching($parent);
 
             $current = $parent;
-            $parent = $parent->parent;
         }
     }
 
-    // 4. Check matching
-    public function checkMatching($user)
+    // 5. Propagation Match
+    public function processMatching(User $user)
     {
-        $user->refresh();
+        $user = User::lockForUpdate()->find($user->id);
 
-        $pairs = min($user->left_count, $user->right_count);
+        if (!$user) return;
 
-        if ($pairs <= 0) return;
+        $left  = $user->left_carry_point;
+        $right = $user->right_carry_point;
 
-        $bonus = $pairs * 100;
+        // কত pair possible
+        $matches = intdiv(min($left, $right), 100);
 
+        if ($matches <= 0) return;
+
+        $usedPoints = $matches * 100;
+        $bonus = $matches * 100;
+
+        // Deduct carry (VERY IMPORTANT)
+        $user->left_carry_point  -= $usedPoints;
+        $user->right_carry_point -= $usedPoints;
+
+        // Update stats
+        $user->total_match += $matches;
+        // $user->own_total_point += $usedPoints * 2;
+
+        // Wallet update
+        $user->wallet_balance += $bonus;
+
+        $user->save();
+
+        // Transaction log
         PointTransaction::create([
-            'user_id' => $user->id,
-            'type' => 'matching',
-            'points' => 0,
+            'user_id'      => $user->id,
+            'type'         => 'matching',
+            'points'       => 0,
             'bonus_amount' => $bonus,
-            'bonus_status' => 'deposit',
-            'source' => 'matching',
-            'reference_id' => $user->id,
+            'bonus_status' => 'credit',
+            'source'       => 'matching',
+            'reference_id' => null,
+            'note'         => "Matching Bonus",
         ]);
-
-        // own match
-        $user->increment('own_match', $pairs);
-
-        // reduce matched counts
-        $user->decrement('left_count', $pairs);
-        $user->decrement('right_count', $pairs);
-
-        // propagate SAME pairs to up lines
-        $this->propagateMatch($user, $pairs);
     }
 
-    // 5. Propagation Match
-    public function propagateMatch($user, $pairs)
+    public function addReferralPointsToUpline($user, $points = 100)
     {
-        $parent = $user->parent;
         $current = $user;
 
-        while ($parent) {
+        while ($current->parent_id) {
 
-            if ($current->id == $parent->left_child_id) {
-                $parent->increment('left_match', $pairs);
-            }
+            $parent = User::lockForUpdate()->find($current->parent_id);
 
-            if ($current->id == $parent->right_child_id) {
-                $parent->increment('right_match', $pairs);
-            }
+            if (!$parent) break;
 
-            // ADD MATCHING BONUS TRANSACTION FOR EACH UP LINE
-            // $exists = PointTransaction::where('user_id', $parent->id)
-            //     ->where('source', 'matching_propagation')
-            //     ->where('reference_id', $user->id)
-            //     ->exists();
+            // 1. Update own total point
+            // $parent->own_total_point += $points;
+            // $parent->save();
 
-            // if (!$exists) {
-            //     PointTransaction::create([
-            //         'user_id' => $parent->id,
-            //         'type' => 'matching',
-            //         'points' => 0,
-            //         'bonus_amount' => $pairs * 100,
-            //         'bonus_status' => 'deposit',
-            //         'source' => 'matching_propagation',
-            //         'reference_id' => $user->id,
-            //         'note' => 'Matching bonus propagated from user ID - ' . $user->id,
-            //     ]);
-            // }
+            // 2. Insert transaction log
+            PointTransaction::create([
+                'user_id'      => $parent->id,
+                'type'         => 'earn',
+                'points'       => $points,
+                'bonus_amount' => 0,
+                'bonus_status' => 'credit',
+                'source'       => 'referral',
+                'reference_id' => $user->id,
+                'note'         => 'Referral point from user ID: ' . $user->id,
+            ]);
 
             $current = $parent;
-            $parent = $parent->parent;
         }
     }
 

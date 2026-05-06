@@ -145,6 +145,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/auth', [CustomerController::class, 'getAuthUser']);
             Route::get('/root', [CustomerController::class, 'getRootUsers']);
             Route::post('/create', [CustomerController::class, 'createUser']);
+            Route::get('/edit/{id}', [CustomerController::class, 'editUser']);
+            Route::post('/update/{id}', [CustomerController::class, 'updateUser']);
             Route::post('/assign-tree', [CustomerController::class, 'assignTree']);
         });
 

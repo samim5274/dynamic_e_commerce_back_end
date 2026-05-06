@@ -169,32 +169,60 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'name'              => ['required','string','max:255'],
+            
             'email'             => ['required','email','max:255','unique:users,email'],
             'phone'             => ['required','string','max:30','unique:users,phone'],
+            'national_id'       => ['required', 'string', 'max:50', 'unique:users,national_id'], // Added unique
+            
             'dob'               => ['nullable','date'],
             'gender'            => ['nullable','in:male,female,other'],
             'blood_group'       => ['nullable','string','max:10'],
             'present_address'   => ['nullable','string','max:500'],
             'permanent_address' => ['nullable','string','max:500'],
-            'national_id'       => ['required','string','max:50'],
             'religion'          => ['nullable','string','max:50'],
             'photo'             => ['nullable','image','max:2048'],
             'refer_id'          => ['required','string'],
             'product_id'        => ['required', 'exists:products,id'],
 
-            // Password Validation
             'password' => [
                 'required',
-                'confirmed', // password_confirmation check করবে
+                'confirmed',
                 Password::min(8)
-                    ->letters()     // Character
-                    ->numbers()     // Number
-                    ->symbols()     // Special char
-                    ->mixedCase(),  // Upper + Lower case
+                    ->letters()
+                    ->numbers()
+                    ->symbols()
+                    ->mixedCase(),
             ],
 
             'root_user_id'      => ['required','exists:users,id'],
             'position'          => ['required','in:left,right'],
+        ], [
+            // Custom Messages
+            'name.required'             => 'The user name is required.',
+            'email.required'            => 'Email address is required.',
+            'email.unique'              => 'This email is already registered in the system.',
+            
+            'phone.required'            => 'Phone number is required.',
+            'phone.unique'              => 'This phone number is already in use.',
+            
+            'national_id.required'      => 'National ID (NID) number is required.',
+            'national_id.unique'        => 'This National ID (NID) has already been registered.',
+            
+            'product_id.required'       => 'Please select a package or product.',
+            'product_id.exists'         => 'The selected product is invalid.',
+            
+            'password.required'         => 'Password is required.',
+            'password.confirmed'        => 'Password and confirmation do not match.',
+            'password.min'              => 'Password must be at least 8 characters long.',
+            
+            'root_user_id.required'     => 'Placement user ID is required.',
+            'root_user_id.exists'       => 'The selected root user does not exist.',
+            
+            'position.required'         => 'Please select a placement position (Left/Right).',
+            'position.in'               => 'Position must be either Left or Right.',
+            
+            'photo.image'               => 'The file must be an image.',
+            'photo.max'                 => 'The image size must not exceed 2MB.',
         ]);
 
         $photoPath = null;
@@ -564,5 +592,153 @@ class CustomerController extends Controller
         }
 
         return $order;
+    }
+
+    public function editUser($id)
+    {
+        try {
+            // Validate ID (optional but good practice)
+            if (!is_numeric($id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid user ID',
+                ], 400);
+            }
+
+            // Find user
+            $user = User::find($id);
+
+            // Not found
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found',
+                ], 404);
+            }
+
+            $user->dob = $user->dob ? \Carbon\Carbon::parse($user->dob)->format('Y-m-d') : null;
+
+            // Success
+            return response()->json([
+                'success' => true,
+                'message' => 'User fetched successfully',
+                'data' => $user,
+            ], 200);
+
+        } catch (\Exception $e) {
+            // Server error handling
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong',
+                'error' => app()->environment('local') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        if (!is_numeric($id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid user ID',
+            ], 400);
+        }
+
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+        
+        $validated = $request->validate([
+            'name'        => ['required','string','max:255'],
+
+            'email' => [
+                'required','email','max:255',
+                Rule::unique('users','email')->ignore($user->id)
+            ],
+
+            'phone' => [
+                'required','string','max:30',
+                Rule::unique('users','phone')->ignore($user->id)
+            ],
+
+            'national_id' => [
+                'required','string','max:50',
+                Rule::unique('users','national_id')->ignore($user->id)
+            ],
+            
+            'dob'               => ['nullable','date'],
+            'gender'            => ['nullable','in:Male,Female,Other'],
+            'blood_group'       => ['nullable','string','max:10'],
+            'present_address'   => ['nullable','string','max:500'],
+            'permanent_address' => ['nullable','string','max:500'],
+            'religion'          => ['nullable','string','max:50'],
+            'is_active'         => ['required','boolean'],
+            'photo'             => ['nullable','image','mimes:jpg,jpeg,png','max:2048'],
+
+            'password' => [
+                'nullable',
+                'confirmed',
+                Password::min(8)
+                    ->letters()
+                    ->numbers()
+                    ->symbols()
+                    ->mixedCase(),
+            ],
+        ]);
+
+
+        try {
+            DB::beginTransaction();
+
+            // prepare data
+            $data = collect($validated)->except(['password','photo'])->toArray();
+
+            // ensure boolean
+            $data['is_active'] = $request->boolean('is_active');
+
+            // password update (optional)
+            if ($request->filled('password')) {
+                $data['password'] = Hash::make($request->password);
+            }
+
+            // photo update + old delete
+            if ($request->hasFile('photo')) {
+
+                // delete old
+                if ($user->photo && Storage::disk('public')->exists($user->photo)) {
+                    Storage::disk('public')->delete($user->photo);
+                }
+
+                $file = $request->file('photo');
+                $path = $file->store('users', 'public');
+
+                $data['photo'] = $path;
+            }
+
+            // update user
+            $user->update($data);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User updated successfully.',
+                'data' => $user
+            ], 200);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Update failed.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 }

@@ -16,7 +16,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'user_id', 'phone', 'password', 'role',
-        'dob', 'gender', 'blood_group', 'national_id', 'religion',
+        'dob', 'gender', 'blood_group', 'national_id', 'religion', 'is_active',
         'present_address', 'permanent_address', 'photo', 'wallet_balance',
         'refer_id','is_match','rank',
         'parent_id', 'left_child_id', 'right_child_id', 'left_count', 'right_count', 'left_match', 'right_match', 'total_match', 'own_match'
@@ -48,6 +48,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'wallet_balance' => 'decimal:2',
         'dob' => 'date',
+        'is_active' => 'boolean',
     ];
 
     public function getTotalMatchAttribute()

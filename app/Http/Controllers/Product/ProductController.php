@@ -180,6 +180,7 @@ class ProductController extends Controller
                     'is_featured'      => $data['is_featured'] ?? false,
                     'is_on_sale'       => $data['is_on_sale'] ?? false,
                     'is_active'        => $data['is_active'] ?? true,
+                    // 'point'            => $data['point'] ?? 0,
                 ]);
 
                 if ($request->has('variants')) {

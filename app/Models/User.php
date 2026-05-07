@@ -34,6 +34,7 @@ class User extends Authenticatable
     protected $appends = [
         'bonus_balance',
         'total_points',
+        'total_own_points',
     ];
 
     protected static function booted()
@@ -107,6 +108,15 @@ class User extends Authenticatable
     public function getTotalPointsAttribute()
     {
         return (int) ($this->pointTransactions()->sum('points') ?? 0);
+    }
+
+    /**
+     * ৩. Total Points (Accessor)
+     * এটি এখন সরাসরি ডাটাবেসের own_total_point রিটার্ন করবে
+     */
+    public function getTotalOwnPointsAttribute()
+    {
+        return (int) ($this->own_total_point ?? 0);
     }
 
 }

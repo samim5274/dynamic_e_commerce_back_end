@@ -12,10 +12,18 @@ use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\PointTransaction;
+use App\Services\PointService;
 use App\Models\Cart;
 
 class OrderController extends Controller
 {
+    protected $pointService;
+
+    public function __construct(PointService $pointService)
+    {
+        $this->pointService = $pointService;
+    }
+    
     public function index(){
         try{
             $orders = Order::with('user')
@@ -214,22 +222,36 @@ class OrderController extends Controller
 
             $order->update($updateData);
 
+            // if ($statusKey === 'delivered') {
+            //     $exists = PointTransaction::where('reference_id', $order->reg)
+            //         ->where('source', 'purchase')
+            //         ->exists();
+
+            //     if (!$exists) {
+            //         PointTransaction::create([
+            //             'user_id'        => $order->user_id,
+            //             'type'           => 'earn',
+            //             'points'         => (int) $order->point,
+            //             'bonus_amount'   => 0,
+            //             'bonus_status'   => 'credit',
+            //             'source'         => 'purchase',
+            //             'reference_id'   => $order->reg,
+            //             'note'           => 'Points added for delivered order',
+            //         ]);
+            //     }
+            // }
+
             if ($statusKey === 'delivered') {
                 $exists = PointTransaction::where('reference_id', $order->reg)
                     ->where('source', 'purchase')
                     ->exists();
 
                 if (!$exists) {
-                    PointTransaction::create([
-                        'user_id'        => $order->user_id,
-                        'type'           => 'earn',
-                        'points'         => (int) $order->point,
-                        'bonus_amount'   => 0,
-                        'bonus_status'   => 'credit',
-                        'source'         => 'purchase',
-                        'reference_id'   => $order->reg,
-                        'note'           => 'Points added for delivered order',
-                    ]);
+                    $user = User::find($order->user_id);
+                    // এখানে $this->pointService এখন কাজ করবে কারণ আমরা উপরে ডিক্লেয়ার করেছি
+                    if ($user && $order->point > 0) {
+                        $this->pointService->distributeOrderPoints($user, (int)$order->point, $order->reg);
+                    }
                 }
             }
 

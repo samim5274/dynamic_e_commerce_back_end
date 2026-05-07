@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\PointTransaction;
 
@@ -166,6 +166,31 @@ class PointService
 
             $current = $parent;
         }
+    }
+
+    // 7. Distribute order point
+    public function distributeOrderPoints(User $user, $points, $orderReg)
+    {
+        DB::transaction(function () use ($user, $points, $orderReg) {
+            // ১. ইউজারের নিজের own_total_point আপডেট
+            $user = User::lockForUpdate()->find($user->id);
+            $user->increment('own_total_point', $points);
+
+            // ২. ট্রানজেকশন লগ তৈরি (আপনার অলরেডি করা আছে, তবে এখান থেকে কন্ট্রোল করা ভালো)
+            PointTransaction::create([
+                'user_id'        => $user->id,
+                'type'           => 'earn',
+                'points'         => $points,
+                'bonus_amount'   => 0,
+                'bonus_status'   => 'credit',
+                'source'         => 'purchase',
+                'reference_id'   => $orderReg,
+                'note'           => 'Points added for delivered order: ' . $orderReg,
+            ]);
+
+            // ৩. আপলাইনদের গ্রুপে (Left/Right) পয়েন্ট যোগ করা
+            $this->addPointsToUpline($user, $points);
+        });
     }
 
 }

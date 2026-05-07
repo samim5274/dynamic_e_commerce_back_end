@@ -121,7 +121,8 @@ class CustomerController extends Controller
 
             $users = User::with(['referrer', 'leftChild', 'rightChild'])
                     ->where('is_match', 0)
-                    ->whereIn('id', $allIds)
+                    ->whereNotIn('role', ['admin', 'super_admin'])
+                    // ->whereIn('id', $allIds) // ata current user ar under ar all faka user
                     ->latest()
                     ->get();
 

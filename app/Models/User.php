@@ -35,6 +35,7 @@ class User extends Authenticatable
         'bonus_balance',
         'total_points',
         'total_own_points',
+        'total_calculation',
     ];
 
     protected static function booted()
@@ -85,7 +86,7 @@ class User extends Authenticatable
     // --- Accessors (Calculated Fields) ---
 
     /**
-     * ১. Bonus Balance (Amount)
+     * 1. Bonus Balance (Amount)
      * ক্যালকুলেশন: মোট ডিপোজিট বোনাস - মোট উইথড্র বোনাস
      */
     public function getBonusBalanceAttribute()
@@ -102,7 +103,7 @@ class User extends Authenticatable
     }
 
     /**
-     * ২. Total Points
+     * 2. Total Points
      * ট্রানজেকশন টেবিল থেকে সর্বমোট পয়েন্টের যোগফল
      */
     public function getTotalPointsAttribute()
@@ -111,12 +112,24 @@ class User extends Authenticatable
     }
 
     /**
-     * ৩. Total Points (Accessor)
+     * 3. Total Points (Accessor)
      * এটি এখন সরাসরি ডাটাবেসের own_total_point রিটার্ন করবে
      */
     public function getTotalOwnPointsAttribute()
     {
         return (int) ($this->own_total_point ?? 0);
+    }
+
+    /**
+     * 4. Account is_active observe codition ar jonno
+     */
+    public function getTotalCalculationAttribute()
+    {
+        return (int) (
+            ($this->left_total_point ?? 0) + 
+            ($this->right_total_point ?? 0) + 
+            ($this->own_total_point ?? 0)
+        );
     }
 
 }

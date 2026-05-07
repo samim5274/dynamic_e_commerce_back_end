@@ -248,7 +248,6 @@ class OrderController extends Controller
 
                 if (!$exists) {
                     $user = User::find($order->user_id);
-                    // এখানে $this->pointService এখন কাজ করবে কারণ আমরা উপরে ডিক্লেয়ার করেছি
                     if ($user && $order->point > 0) {
                         $this->pointService->distributeOrderPoints($user, (int)$order->point, $order->reg);
                     }

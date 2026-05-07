@@ -6,21 +6,25 @@ use App\Models\User;
 
 class UserObserver
 {
-    public function updating(User $user){
+    public function updating(User $user)
+    {
+        $total = $user->total_calculation;
 
-        if($user->point >= 2500000){
+        // 1. Rank Condition 
+        if ($total >= 2500000) {
             $user->rank = "Platinum";
-        }
-        elseif($user->point >= 100000){
+        } elseif ($total >= 100000) {
             $user->rank = "Diamond";
-        }
-        elseif($user->point >= 50000){
+        } elseif ($total >= 50000) {
             $user->rank = "Gold";
-        } elseif ($user->points >= 10000) {
+        } elseif ($total >= 10000) {
             $user->rank = 'Silver';
         } else {
             $user->rank = 'Bronze';
         }
+
+        // 2. Is Active Condition
+        $user->is_active = ($total < 100) ? 0 : 1;
 
         // is match condition added here
         if($user->left_child_id && $user->right_child_id){

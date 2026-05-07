@@ -171,12 +171,11 @@ class PointService
     // 7. Distribute order point
     public function distributeOrderPoints(User $user, $points, $orderReg)
     {
-        DB::transaction(function () use ($user, $points, $orderReg) {
-            // ১. ইউজারের নিজের own_total_point আপডেট
+        DB::transaction(function () use ($user, $points, $orderReg) 
+        {
             $user = User::lockForUpdate()->find($user->id);
             $user->increment('own_total_point', $points);
 
-            // ২. ট্রানজেকশন লগ তৈরি (আপনার অলরেডি করা আছে, তবে এখান থেকে কন্ট্রোল করা ভালো)
             PointTransaction::create([
                 'user_id'        => $user->id,
                 'type'           => 'earn',
@@ -185,11 +184,8 @@ class PointService
                 'bonus_status'   => 'credit',
                 'source'         => 'purchase',
                 'reference_id'   => $orderReg,
-                'note'           => 'Points added for delivered order: ' . $orderReg,
+                'note'           => 'Own purchase points for order: ' . $orderReg,
             ]);
-
-            // ৩. আপলাইনদের গ্রুপে (Left/Right) পয়েন্ট যোগ করা
-            $this->addPointsToUpline($user, $points);
         });
     }
 

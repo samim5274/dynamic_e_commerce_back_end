@@ -43,7 +43,7 @@ class StoreProductRequest extends FormRequest
             'is_featured' => ['nullable', 'boolean'],
             'is_on_sale' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
-            // 'point' => ['required', 'numeric', 'min:0'],
+            'point' => ['required', 'numeric', 'min:0'],
 
             // Images
             'images' => ['nullable', 'array'],

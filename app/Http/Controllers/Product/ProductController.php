@@ -180,7 +180,7 @@ class ProductController extends Controller
                     'is_featured'      => $data['is_featured'] ?? false,
                     'is_on_sale'       => $data['is_on_sale'] ?? false,
                     'is_active'        => $data['is_active'] ?? true,
-                    // 'point'            => $data['point'] ?? 0,
+                    'point'            => $data['point'] ?? 0,
                 ]);
 
                 if ($request->has('variants')) {
@@ -386,7 +386,7 @@ class ProductController extends Controller
                 $product->update($request->only([
                     'name', 'sku', 'price', 'discount_price', 'stock_quantity',
                     'min_stock', 'summary', 'description', 'meta_title',
-                    'meta_keywords', 'meta_description'
+                    'meta_keywords', 'meta_description', 'point'
                 ]));
 
                 if ($request->has('brand')) $product->brand_id = $request->brand;

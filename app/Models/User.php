@@ -68,12 +68,14 @@ class User extends Authenticatable
 
     // --- Relationships ---
     public function parent() { return $this->belongsTo(User::class, 'parent_id'); }
-    
-    public function children() { return $this->hasMany(User::class, 'parent_id')->with('children'); }
 
-    public function leftChild() { return $this->belongsTo(User::class, 'left_child_id')->with(['leftChild', 'rightChild']); }
+    public function leftChild(){ return $this->belongsTo(User::class, 'left_child_id'); }
 
-    public function rightChild() { return $this->belongsTo(User::class, 'right_child_id')->with(['leftChild', 'rightChild']); }
+    public function rightChild(){ return $this->belongsTo(User::class, 'right_child_id');}
+
+    public function leftChildRecursive() { return $this->leftChild()->with(['leftChildRecursive','rightChildRecursive']);}
+
+    public function rightChildRecursive(){return $this->rightChild()->with(['leftChildRecursive','rightChildRecursive']);}
 
     public function referrer() { return $this->belongsTo(User::class, 'refer_id'); }
 

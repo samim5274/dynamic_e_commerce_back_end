@@ -56,7 +56,7 @@ class ProductSeeder extends Seeder
                 'meta_keywords'    => "sample, product, {$i}",
                 'meta_description' => "Meta description for {$name}",
                 'sv'               => rand(10,1000),
-                'point'            => rand(10,1000),
+                'point'            => rand(5,200),
                 'is_featured'      => rand(0,1),
                 'is_on_sale'       => rand(0,1),
                 'is_active'        => 1,

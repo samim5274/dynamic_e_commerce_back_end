@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
+use App\Models\Product;
 use App\Models\PointTransaction;
 
 class PointService
@@ -50,20 +51,23 @@ class PointService
     }
 
     // 2. Update Count
-    public function updateCounts($user)
+    public function updateCounts($user, $productId)
     {
-        DB::transaction(function () use ($user) {
+        DB::transaction(function () use ($user, $productId) {
 
             $user = User::lockForUpdate()->find($user->id);
             if (!$user) return;
 
-            $this->addPointsToUpline($user, 100);
-            $this->addReferralPointsToUpline($user, 100);
+            $points = Product::find($productId);
+            if (!$points) return;
+
+            $this->addPointsToUpline($user, $points->point);
+            $this->addReferralPointsToUpline($user, $points->point);
         });
     }
 
     // 4. Add point to upline
-    public function addPointsToUpline($user, $points = 100)
+    public function addPointsToUpline($user, $points)
     {
         $current = $user;
 
@@ -138,7 +142,7 @@ class PointService
         ]);
     }
 
-    public function addReferralPointsToUpline($user, $points = 100)
+    public function addReferralPointsToUpline($user, $points)
     {
         $current = $user;
 

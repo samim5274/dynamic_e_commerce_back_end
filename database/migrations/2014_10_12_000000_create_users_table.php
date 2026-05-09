@@ -59,8 +59,8 @@ return new class extends Migration
 
             // Tree structure
             $table->foreignId('parent_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('left_child_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('right_child_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('left_child_id')->nullable()->constrained('users')->onDelete('set null'); // A Group
+            $table->foreignId('right_child_id')->nullable()->constrained('users')->onDelete('set null'); // B Group
             
             // POINT SYSTEM (CORE)
             $table->bigInteger('left_total_point')->default(0);   // lifetime left

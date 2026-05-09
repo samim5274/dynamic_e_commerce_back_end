@@ -91,13 +91,15 @@ class ProfileController extends Controller
 
     public function treeUserLogRoot(Request $request)
     {
+        $rootId = $request->query('root_id');
+
         $withRelations = [
-            'children',
-            'pointTransactions' => function($query) {
-                $query->orderBy('id', 'desc');
+            'leftChildRecursive',
+            'rightChildRecursive',
+            'pointTransactions' => function ($query) {
+                $query->latest();
             }
         ];
-        $rootId = $request->query('root_id');
 
         if ($rootId) {
             $root = User::with($withRelations)->find($rootId);
@@ -112,7 +114,7 @@ class ProfileController extends Controller
                 'success' => false,
                 'message' => 'User not found',
                 'data' => null
-            ]);
+            ], 404);
         }
 
         return response()->json([
@@ -381,7 +383,7 @@ class ProfileController extends Controller
 
                 // MLM update
                 $pointService->referralBonus($user);
-                $pointService->updateCounts($user);
+                $pointService->updateCounts($user, $validated['product_id']);
 
                 // Product order
                 $this->addProductToCartForUser($user, $validated['product_id']);

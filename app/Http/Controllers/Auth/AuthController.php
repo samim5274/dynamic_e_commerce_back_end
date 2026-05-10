@@ -15,6 +15,12 @@ use App\Jobs\UpdateLastLoginJob;
 use App\Models\User;
 use App\Mail\OTPMail;
 use Mail;
+use App\Models\Product;
+use App\Models\Cart;
+use App\Models\ProductVariant;
+use App\Models\Order;
+use App\Services\PointService;
+use App\Services\RegGenerator;
 
 class AuthController extends Controller
 {
@@ -447,5 +453,59 @@ class AuthController extends Controller
         return response()->json([
             'devices' => $tokens
         ]);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    public function getUsers(){
+        try {
+            $users = User::with(['referrer', 'leftChild', 'rightChild'])
+                    ->where('is_match', 0)
+                    ->where('role', '!=', 'super_admin')
+                    ->latest()
+                    ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetched all admin users',
+                'data' => $users,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getProducts()
+    {
+        try {
+            $products = Product::where('point', '>=', 100)
+                    ->latest()
+                    ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetched all 100 points products',
+                'data' => $products,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

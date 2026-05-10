@@ -257,7 +257,7 @@ class CustomerController extends Controller
 
                 // MLM update
                 $pointService->referralBonus($user);
-                $pointService->updateCounts($user);
+                $pointService->updateCounts($user, $validated['product_id']);
 
                 // Product order
                 $this->addProductToCartForUser($user, $validated['product_id']);

@@ -27,6 +27,37 @@ use App\Services\RegGenerator;
 
 class AuthController extends Controller
 {
+    public function getReferUser($referCode)
+    {
+        try 
+        {
+            $user = User::select(['id','name','user_id','email'])
+                ->where('user_id', $referCode)
+                ->first();
+
+            // User not found
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Referral user not found.',
+                    'data' => null,
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Referral user fetched successfully.',
+                'data' => $user,
+            ], 200);
+        }catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while fetching referral user.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // public function register(Request $request)
     // {
     //     try {
@@ -61,16 +92,16 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name'              => ['required','string','max:255'],
             'email'             => ['required','email','max:255','unique:users,email'],
-            'phone'             => ['nullable','string','max:30','unique:users,phone'],
+            'phone'             => ['required','string','max:30','unique:users,phone'],
             'dob'               => ['nullable','date'],
             'gender'            => ['nullable','in:male,female,other'],
             'blood_group'       => ['nullable','string','max:10'],
             'present_address'   => ['nullable','string','max:500'],
             'permanent_address' => ['nullable','string','max:500'],
-            'national_id'       => ['nullable','string','max:50'],
+            'national_id'       => ['required','string','max:50'],
             'religion'          => ['nullable','string','max:50'],
             'photo'             => ['nullable','image','max:2048'],
-            'refer_id'          => ['required','string'],
+            'refer_id'          => ['required','string', 'exists:users,user_id'],
             'product_id'        => ['required', 'exists:products,id'],
 
             // Password Validation
@@ -86,6 +117,8 @@ class AuthController extends Controller
 
             'root_user_id'      => ['required','exists:users,id'],
             'position'          => ['required','in:left,right'],
+        ],[
+            'root_user_id.exists' => 'The provided referrer ID does not exist in our records.',
         ]);
 
         $photoPath = null;

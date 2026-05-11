@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use App\Jobs\UpdateLastLoginJob;
@@ -24,33 +27,290 @@ use App\Services\RegGenerator;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    // public function register(Request $request)
+    // {
+    //     try {
+    //         $request->validate([
+    //             'name' => 'required|string|max:255',
+    //             'email' => 'required|email|unique:users,email',
+    //             'password' => 'required|string|min:6|confirmed',
+    //         ], [
+    //             'email.unique' => 'This email is already registered. Please use another email.',
+    //         ]);
+
+    //         $user = User::create([
+    //             'name'      => $request->name,
+    //             'email'     => $request->email,
+    //             'password'  => Hash::make($request->password)
+    //         ]);
+
+    //         $token = $user->createToken('api-token')->plainTextToken;
+
+    //         return response()->json([
+    //             'user'  => $user->only(['id','name','email','role','is_active','created_at']),
+    //             'token' => $token,
+    //         ], 201);
+
+    //     } catch (ValidationException $e) {
+    //         return response()->json(['errors' => $e->errors()], 422);
+    //     }
+    // }
+
+    public function register(Request $request, PointService $pointService)
     {
+        $validated = $request->validate([
+            'name'              => ['required','string','max:255'],
+            'email'             => ['required','email','max:255','unique:users,email'],
+            'phone'             => ['nullable','string','max:30','unique:users,phone'],
+            'dob'               => ['nullable','date'],
+            'gender'            => ['nullable','in:male,female,other'],
+            'blood_group'       => ['nullable','string','max:10'],
+            'present_address'   => ['nullable','string','max:500'],
+            'permanent_address' => ['nullable','string','max:500'],
+            'national_id'       => ['nullable','string','max:50'],
+            'religion'          => ['nullable','string','max:50'],
+            'photo'             => ['nullable','image','max:2048'],
+            'refer_id'          => ['required','string'],
+            'product_id'        => ['required', 'exists:products,id'],
+
+            // Password Validation
+            'password' => [
+                'required',
+                'confirmed', // password_confirmation check করবে
+                Password::min(8)
+                    ->letters()     // Character
+                    ->numbers()     // Number
+                    ->symbols()     // Special char
+                    ->mixedCase(),  // Upper + Lower case
+            ],
+
+            'root_user_id'      => ['required','exists:users,id'],
+            'position'          => ['required','in:left,right'],
+        ]);
+
+        $photoPath = null;
+
         try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
-                'password' => 'required|string|min:6|confirmed',
-            ], [
-                'email.unique' => 'This email is already registered. Please use another email.',
-            ]);
+            return DB::transaction(function () use ($request, $validated, $pointService, &$photoPath) {
+                
+                // Find refer user
+                $referUser = User::where('user_id', $validated['refer_id'])->firstOrFail();
 
-            $user = User::create([
-                'name'      => $request->name,
-                'email'     => $request->email,
-                'password'  => Hash::make($request->password)
-            ]);
+                // Upload photo
+                if ($request->hasFile('photo')) {
+                    $photoPath = $request->file('photo')->store('users', 'public');
+                }
 
-            $token = $user->createToken('api-token')->plainTextToken;
+                // user create
+                $user = User::create(array_merge($validated, [
+                    'password' => Hash::make($validated['password']),
+                    'refer_id' => $referUser->id,
+                    'photo'    => $photoPath,
+                    'is_profile_completed' => !empty($validated['phone']),
+                ]));
 
+                // uniqure user id
+                $user->update([
+                    'user_id' => 'DBMBL' . str_pad($user->id, 4, '0', STR_PAD_LEFT)
+                ]);
+
+                // assign tree
+                $this->assignToTree($user, $validated['root_user_id'], $validated['position']);
+
+                // MLM update
+                $pointService->referralBonus($user);
+                $pointService->updateCounts($user, $validated['product_id']);
+
+                // Product order
+                $this->addProductToCartForUser($user, $validated['product_id']);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'User created and assigned to tree successfully.',
+                    'user_id' => $user->user_id
+                ], 201);
+            });
+
+        } catch (Exception $e) {
+            if ($photoPath) Storage::disk('public')->delete($photoPath);
+            
             return response()->json([
-                'user'  => $user->only(['id','name','email','role','is_active','created_at']),
-                'token' => $token,
-            ], 201);
-
-        } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
         }
+    }
+
+    private function assignToTree(User $user, $rootUserId, $position)
+    {
+        // self assign check
+        if ($user->id == $rootUserId) {
+            throw new Exception('A user cannot be their own root parent.');
+        }
+
+        // root user lock Race Condition
+        $rootUser = User::where('id', $rootUserId)->lockForUpdate()->firstOrFail();
+
+        // possition check
+        if ($position === 'left' && $rootUser->left_child_id) {
+            throw new Exception('The left position is already occupied.');
+        }
+        
+        if ($position === 'right' && $rootUser->right_child_id) {
+            throw new Exception('The right position is already occupied.');
+        }
+
+        // method
+        if (method_exists($this, 'isDescendant') && $this->isDescendant($rootUser, $user)) {
+            throw new Exception('Circular reference detected.');
+        }
+
+        // relation update
+        $user->parent_id = $rootUser->id;
+        $user->save();
+
+        if ($position === 'left') {
+            $rootUser->left_child_id = $user->id;
+        } else {
+            $rootUser->right_child_id = $user->id;
+        }
+        
+        $rootUser->save();
+    }
+
+    private function addProductToCartForUser($user, $productId, $variantId = null)
+    {
+        $reg = RegGenerator::generateOrderReg($user->id);
+
+        if (!$reg) {
+            throw new \Exception('Failed to generate cart session.');
+        }
+
+        // Lock product
+        $product = Product::lockForUpdate()->findOrFail($productId);
+
+        // ======================
+        // Variant Handling
+        // ======================
+        $variant = null;
+
+        if (!empty($variantId)) {
+            $variant = ProductVariant::lockForUpdate()
+                ->where('id', $variantId)
+                ->where('product_id', $product->id)
+                ->firstOrFail();
+        } else {
+            $variant = ProductVariant::where('product_id', $product->id)
+                ->orderBy('id', 'asc')
+                ->first(); // auto first variant
+        }
+
+        // ======================
+        // Price Logic
+        // ======================
+        if ($variant) {
+            $basePrice = $variant->price ?? $product->price;
+            $variantDiscount = $variant->discount_price ?? 0;
+
+            $finalPrice = $variantDiscount > 0
+                ? $basePrice - $variantDiscount
+                : $basePrice;
+
+            $discountAmount = $variantDiscount > 0
+                ? $variantDiscount
+                : 0;
+
+        } else {
+            $finalPrice = $product->price;
+            $discountAmount = 0;
+        }
+
+        // ======================
+        // Find Cart Item
+        // ======================
+        $query = Cart::where('reg', $reg)
+            ->where('product_id', $product->id);
+
+        if ($variant) {
+            $query->where('variant_id', $variant->id);
+        } else {
+            $query->whereNull('variant_id');
+        }
+
+        $cartItem = $query->first();
+
+        // ======================
+        // Save Cart
+        // ======================
+        if ($cartItem) {
+            $cartItem->increment('quantity', 1);
+
+            // optional update price (if changed)
+            $cartItem->update([
+                'price' => $finalPrice,
+                'discount' => $discountAmount,
+            ]);
+
+        } else {
+            Cart::create([
+                'reg'        => $reg,
+                'user_id'    => $user->id,
+                'product_id' => $product->id,
+                'variant_id' => $variant?->id,
+                'quantity'   => 1,
+                'price'      => $finalPrice,
+                'discount'   => $discountAmount,
+                'point'      => $product->point ?? 0,
+            ]);
+        }
+
+        $order = $this->ensureOrderExists($user, $reg);
+
+        return $reg;
+    }
+
+    private function ensureOrderExists($user, $reg)
+    {
+        $order = Order::where('reg', $reg)->first();
+
+        if (!$order) {
+
+            $cartItems = Cart::where('reg', $reg)->get();
+
+            if (!$cartItems->count()) {
+                return null;
+            }
+
+            $amount = $cartItems->sum(fn($item) => $item->price * $item->quantity);
+            $point = $cartItems->sum(fn($item) => $item->point * $item->quantity);
+            $discount = $cartItems->sum(fn($item) => $item->discount * $item->quantity);
+
+            $tran_id = uniqid('SSLCZ_');
+
+            $order = Order::create([
+                'reg' => $reg,
+                'date' => now()->toDateString(),
+                'user_id' => $user->id,
+
+                'amount' => $amount,
+                'discount' => $discount,
+                'payable_amount' => $amount - $discount,
+                'currency' => 'BDT',
+                'point' => (int) $point,
+
+                'payment_method' => "Cash",
+                'transaction_id' => $tran_id,
+                'is_paid' => false,
+                'paid_at' => null,
+
+                'status' => 'Pending',
+
+                'contact_number' => $user->phone,
+                'shipping_address' => $user->present_address,
+            ]);
+        }
+
+        return $order;
     }
 
     // Old Login

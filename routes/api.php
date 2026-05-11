@@ -29,7 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::prefix('register')->group(function () {
-    Route::post('/', [AuthController::class, 'register']);
+    Route::post('/create-user', [AuthController::class, 'register']);
     Route::get('/root-users', [AuthController::class, 'getUsers']);
     Route::get('/products', [AuthController::class, 'getProducts']);
 });

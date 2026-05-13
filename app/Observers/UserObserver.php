@@ -10,6 +10,12 @@ class UserObserver
     {
         $total = $user->total_calculation;
 
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Rank Condition
+        |--------------------------------------------------------------------------
+        */
+
         // 1. Rank Condition 
         if ($total >= 2500000) {
             $user->rank = "Platinum";
@@ -23,14 +29,40 @@ class UserObserver
             $user->rank = 'Bronze';
         }
 
-        // 2. Is Active Condition
-        $user->is_active = ($total < 100) ? 0 : 1;
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Monthly Purchase Check
+        |--------------------------------------------------------------------------
+        */
+        $monthlyPurchase = PointTransaction::where('user_id', $user->id)
+            ->where('source', 'purchase')
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('points');
+        
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Active Condition
+        |--------------------------------------------------------------------------
+        |
+        | Rule:
+        | - Total point must be >= 100
+        | - Current month purchase must be >= 50
+        |
+        */
+        $user->is_active = (
+            $total >= 100 &&
+            $monthlyPurchase >= 50
+        ) ? 1 : 0;
 
-        // is match condition added here
-        if($user->left_child_id && $user->right_child_id){
-            $user->is_match = true;
-        }else {
-            $user->is_match = false;
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Match Condition
+        |--------------------------------------------------------------------------
+        */
+        $user->is_match = (
+            $user->left_child_id &&
+            $user->right_child_id
+        ) ? true : false;
     }
 }

@@ -75,6 +75,11 @@ class PointService
 
             $parent = User::lockForUpdate()->find($current->parent_id);
             if (!$parent) break;
+            // INACTIVE USER হলে skip করবে
+            if (!$parent->isActive()) {
+                $current = $parent;
+                continue;
+            }
 
             // LEFT SIDE
             if ($current->id == $parent->left_child_id) {
@@ -192,5 +197,4 @@ class PointService
             ]);
         });
     }
-
 }

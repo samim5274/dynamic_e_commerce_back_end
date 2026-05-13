@@ -549,12 +549,12 @@ class AuthController extends Controller
         }
 
         // Optional: block/inactive check (if you have this column)
-        if (! $user->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account is disabled.',
-            ], 403);
-        }
+        // if (! $user->is_active) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Your account is disabled.',
+        //     ], 403);
+        // }
 
         // Optional: Email Verification Check
         // if (is_null($user->email_verified_at)) {

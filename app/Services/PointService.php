@@ -76,10 +76,10 @@ class PointService
             $parent = User::lockForUpdate()->find($current->parent_id);
             if (!$parent) break;
             // INACTIVE USER হলে skip করবে
-            if (!$parent->isActive()) {
-                $current = $parent;
-                continue;
-            }
+            // if (!$parent->isActive()) {
+            //     $current = $parent;
+            //     continue;
+            // }
 
             // LEFT SIDE
             if ($current->id == $parent->left_child_id) {
@@ -109,6 +109,10 @@ class PointService
         $user = User::lockForUpdate()->find($user->id);
 
         if (!$user) return;
+        // INACTIVE USER হলে skip করবে
+        if (!$user->isActive()) {
+            return;
+        }
 
         $left  = $user->left_carry_point;
         $right = $user->right_carry_point;
@@ -118,8 +122,29 @@ class PointService
 
         if ($matches <= 0) return;
 
+        /*
+        |--------------------------------------------------------------------------
+        | Daily Matching Limit
+        |--------------------------------------------------------------------------
+        | Daily max 50 matching
+        */
+        $todayMatched = PointTransaction::where('user_id', $user->id)
+            ->where('source', 'matching')
+            ->whereDate('created_at', today())
+            ->sum('matching_count');
+
+        $remainingMatch = 50 - $todayMatched;
+
+        // Daily limit full
+        if ($remainingMatch <= 0) {
+            return;
+        }
+
+        // Final allowed match
+        $matches = min($matches, $remainingMatch);
+
         $usedPoints = $matches * 100;
-        $bonus = $matches * 100;
+        $bonus      = $matches * 100;
 
         // Deduct carry (VERY IMPORTANT)
         $user->left_carry_point  -= $usedPoints;

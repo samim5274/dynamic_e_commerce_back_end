@@ -673,12 +673,12 @@ class CustomerController extends Controller
             ],
             
             'dob'               => ['nullable','date'],
-            'gender'            => ['nullable','in:Male,Female,Other'],
+            'gender'            => ['nullable','in:male,female,other,Male,Female,Other'],
             'blood_group'       => ['nullable','string','max:10'],
             'present_address'   => ['nullable','string','max:500'],
             'permanent_address' => ['nullable','string','max:500'],
             'religion'          => ['nullable','string','max:50'],
-            'is_active'         => ['required','boolean'],
+            'is_active'         => ['nullable'],
             'photo'             => ['nullable','image','mimes:jpg,jpeg,png','max:2048'],
 
             'password' => [

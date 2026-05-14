@@ -83,10 +83,12 @@ class UserObserver
         | - Current month purchase must be >= 50
         |
         */
-        $user->is_active = (
-            $total >= 100 &&
-            $monthlyPurchase >= 50
-        ) ? 1 : 0;
+        if (is_null($user->is_active)) {
+            $user->is_active = (
+                $total >= 100 &&
+                $monthlyPurchase >= 50
+            ) ? 1 : 0;
+        }
 
         /*
         |--------------------------------------------------------------------------

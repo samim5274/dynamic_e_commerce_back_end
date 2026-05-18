@@ -85,6 +85,8 @@ class User extends Authenticatable
 
     public function orders() { return $this->hasMany(Order::class, 'user_id'); }
 
+    public function transection() { return $this->hasMany(Transaction::class); }
+
     // --- Accessors (Calculated Fields) ---
 
     /**

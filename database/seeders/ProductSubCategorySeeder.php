@@ -21,7 +21,8 @@ class ProductSubCategorySeeder extends Seeder
                 'Capsule',
                 'Syrup',
                 'Injection',
-                'Ointment'
+                'Ointment',
+                'Others'
             ],
 
             'Medical Devices' => [

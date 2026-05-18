@@ -108,14 +108,13 @@ class PointService
     {
         $user = User::lockForUpdate()->find($user->id);
 
-        if (!$user) return;
         // INACTIVE USER হলে skip করবে
-        if (!$user->isActive()) {
-            return;
-        }
+        if (!$user || !$user->isActive()) { return; }
 
-        $left  = $user->left_carry_point;
-        $right = $user->right_carry_point;
+        $left  = (int) $user->left_carry_point;
+        $right = (int) $user->right_carry_point;
+
+        if ($left < 100 || $right < 100) return;
 
         // কত pair possible
         $matches = intdiv(min($left, $right), 100);
@@ -131,17 +130,17 @@ class PointService
         $todayMatched = PointTransaction::where('user_id', $user->id)
             ->where('source', 'matching')
             ->whereDate('created_at', today())
-            ->sum('matching_count');
+            ->sum('matching_count') ?? 0;
 
-        $remainingMatch = 50 - $todayMatched;
+        $remainingMatch = max(0, 50 - $todayMatched);
 
         // Daily limit full
-        if ($remainingMatch <= 0) {
-            return;
-        }
+        if ($remainingMatch <= 0) { return; }
 
         // Final allowed match
         $matches = min($matches, $remainingMatch);
+
+        if ($matches <= 0) return;
 
         $usedPoints = $matches * 100;
         $bonus      = $matches * 100;
@@ -161,14 +160,15 @@ class PointService
 
         // Transaction log
         PointTransaction::create([
-            'user_id'      => $user->id,
-            'type'         => 'matching',
-            'points'       => 0,
-            'bonus_amount' => $bonus,
-            'bonus_status' => 'credit',
-            'source'       => 'matching',
-            'reference_id' => null,
-            'note'         => "Matching Bonus",
+            'user_id'           => $user->id,
+            'type'              => 'matching',
+            'points'            => 0,
+            'matching_count'    => $matches,
+            'bonus_amount'      => $bonus,
+            'bonus_status'      => 'credit',
+            'source'            => 'matching',
+            'reference_id'      => null,
+            'note'              => "Matching Bonus",
         ]);
     }
 

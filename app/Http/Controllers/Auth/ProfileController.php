@@ -148,6 +148,28 @@ class ProfileController extends Controller
         }
     }
 
+    public function getAllUsers(){
+        try {
+            $users = User::with(['referrer', 'leftChild', 'rightChild'])
+                    // ->where('is_match', 0)
+                    ->where('role', '!=', 'super_admin')
+                    ->latest()
+                    ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetched all admin users',
+                'data' => $users,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function getProducts()
     {
         try {

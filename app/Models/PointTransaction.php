@@ -11,7 +11,7 @@ class PointTransaction extends Model
 
     protected $fillable = [
         'user_id',
-        'type', 'points',
+        'type', 'points', 'matching_count',
         'bonus_amount', 'bonus_status',
         'source', 'reference_id', 'note'
     ];

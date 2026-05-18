@@ -22,44 +22,80 @@ class UserObserver
         $left  = $user->left_total_point ?? 0;
         $right = $user->right_total_point ?? 0;
 
+        $newRank = "Bronze";
+        $cashBonus = 0;
+
+        // ইমেজ প্ল্যান অনুযায়ী র্যাঙ্ক এবং ক্যাশ বোনাস ম্যাপিং
         if ($left >= 50000000 && $right >= 50000000) {
-            $user->rank = "Crown Diamond";
-
+            $newRank = "Crown Diamond";
+            $cashBonus = 2500000; // 2.5-Core (25 Lakh)
         } elseif ($left >= 20000000 && $right >= 20000000) {
-            $user->rank = "Royal Diamond";
-
+            $newRank = "Royal Diamond";
+            $cashBonus = 10000000; // 1-Core (1 Crore)
         } elseif ($left >= 10000000 && $right >= 10000000) {
-            $user->rank = "Elite Diamond";
-
+            $newRank = "Elite Diamond";
+            $cashBonus = 5000000; // 50 Lakh
         } elseif ($left >= 5000000 && $right >= 5000000) {
-            $user->rank = "Black Diamond";
-
+            $newRank = "Black Diamond";
+            $cashBonus = 2500000; // 25 Lakh
         } elseif ($left >= 2000000 && $right >= 2000000) {
-            $user->rank = "Red Diamond";
-
+            $newRank = "Red Diamond";
+            $cashBonus = 1000000; // 10 Lakh
         } elseif ($left >= 1000000 && $right >= 1000000) {
-            $user->rank = "Purple Diamond";
-
+            $newRank = "Purple Diamond";
+            $cashBonus = 500000;  // 5 Lakh
         } elseif ($left >= 500000 && $right >= 500000) {
-            $user->rank = "Green Diamond";
-
+            $newRank = "Green Diamond";
+            $cashBonus = 250000;  // 2.5 Lakh
         } elseif ($left >= 200000 && $right >= 200000) {
-            $user->rank = "Blue Diamond";
-
+            $newRank = "Blue Diamond";
+            $cashBonus = 100000;  // 1 Lakh
         } elseif ($left >= 100000 && $right >= 100000) {
-            $user->rank = "Diamond";
-
+            $newRank = "Diamond";
+            $cashBonus = 50000;   // 50,000 Tk
         } elseif ($left >= 50000 && $right >= 50000) {
-            $user->rank = "Platinum";
-
+            $newRank = "Platinum";
+            $cashBonus = 25000;   // 25,000 Tk
         } elseif ($left >= 20000 && $right >= 20000) {
-            $user->rank = "Gold";
-
+            $newRank = "Gold";
+            $cashBonus = 10000;   // 10,000 Tk
         } elseif ($left >= 10000 && $right >= 10000) {
-            $user->rank = "Silver";
+            $newRank = "Silver";
+            $cashBonus = 5000;    // 5000 Tk
+        }
 
-        } else {
-            $user->rank = "Bronze";
+        // র্যাঙ্ক যদি পরিবর্তন হয় (আগের চেয়ে আপগ্রেড হয়)
+        if ($user->isDirty('rank') || $user->rank !== $newRank) {
+            
+            $oldRank = $user->rank;
+            $user->rank = $newRank;
+
+            // ব্রোঞ্জ বা কোনো বোনাস না থাকলে স্কিপ করবে
+            if ($cashBonus > 0 && $newRank !== "Bronze") {
+                
+                $bonusExists = PointTransaction::where('user_id', $user->id)
+                    ->where('source', 'rank_bonus')
+                    ->where('note', 'like', "%Rank: {$newRank}%")
+                    ->exists();
+
+                if (!$bonusExists) {
+                    
+                    // ১. লেজার ডিস্ট্রিবিউশন লগ ইনসার্ট
+                    PointTransaction::create([
+                        'user_id'        => $user->id,
+                        'type'           => 'bonus',
+                        'points'         => 0,
+                        'bonus_amount'   => $cashBonus,
+                        'bonus_status'   => 'credit',
+                        'source'         => 'rank_bonus',
+                        'reference_id'   => null,
+                        'note'           => "Rank Reward Cash Bonus for achieving Rank: {$newRank}",
+                    ]);
+
+                    // ২. ইউজারের মেইন ওয়ালেটে টাকা রিফ্লেক্ট করা
+                    $user->wallet_balance += $cashBonus;
+                }
+            }
         }
 
         /*

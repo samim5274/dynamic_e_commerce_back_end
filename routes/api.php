@@ -67,6 +67,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::prefix('users')->group(function () {
         Route::get('/', [ProfileController::class, 'getUsers']);
+        Route::get('/get-all', [ProfileController::class, 'getAllUsers']);
         Route::get('/products', [ProfileController::class, 'getProducts']);
         Route::get('/root', [ProfileController::class, 'getRootUsers']);
         Route::post('/create', [ProfileController::class, 'createUser']);
@@ -228,5 +229,32 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/update-status/{reg}', [OrderController::class, 'updateStatus']);
         Route::get('/customer/{user_id}', [OrderController::class, 'getCustomerDetails']);
         Route::post('/confirm/{reg}', [OrderController::class, 'confirmOrder']);
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ======================
+// Finance Routes
+// ======================
+use App\Http\Controllers\Finance\WalletController;
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('finance')->group(function () {
+        Route::get('/', [ WalletController::class, 'index']);
+        Route::get('/transaction', [ WalletController::class, 'transection']);
+        Route::post('/withdraw/store', [ WalletController::class, 'store']);
+        Route::post('/withdraw/verify-otp', [ WalletController::class, 'verifyOtp']);
+        Route::delete('/transaction/{id}', [ WalletController::class, 'transectionDelete']);
     });
 });

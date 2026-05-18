@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
 
-            $table->enum('type', ['earn', 'spend', 'bonus', 'matching'])->default('earn');
+            $table->enum('type', ['earn', 'spend', 'bonus', 'matching', 'withdraw', 'refund'])->default('earn');
             $table->integer('points');
+            $table->integer('matching_count')->default(0);
 
             $table->decimal('bonus_amount', 15, 2)->default(0);
             $table->enum('bonus_status', ['credit', 'debit'])->nullable();

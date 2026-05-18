@@ -22,6 +22,7 @@ class BrandSeeder extends Seeder
             ['name' => 'H&M'],
             ['name' => 'Gucci'],
             ['name' => 'Louis Vuitton'],
+            ['name' => 'Others'],
         ];
 
         foreach ($brands as $key => $brand) {

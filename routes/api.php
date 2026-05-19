@@ -253,6 +253,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('finance')->group(function () {
         Route::get('/', [ WalletController::class, 'index']);
         Route::get('/transaction', [ WalletController::class, 'transection']);
+        Route::get('/admin/transaction', [ WalletController::class, 'processingTransection']);
         Route::post('/withdraw/store', [ WalletController::class, 'store']);
         Route::post('/withdraw/verify-otp', [ WalletController::class, 'verifyOtp']);
         Route::delete('/transaction/{id}', [ WalletController::class, 'transectionDelete']);

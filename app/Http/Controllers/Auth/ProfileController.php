@@ -404,7 +404,7 @@ class ProfileController extends Controller
                 $this->assignToTree($user, $validated['root_user_id'], $validated['position']);
 
                 // MLM update
-                $pointService->referralBonus($user);
+                // $pointService->referralBonus($user); // ata active korte hole add more value: order->reg
                 $pointService->updateCounts($user, $validated['product_id']);
 
                 // Product order

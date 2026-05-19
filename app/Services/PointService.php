@@ -11,9 +11,9 @@ use App\Models\PointTransaction;
 class PointService
 {
     // 1. Referral Bonus
-    public function referralBonus($user)
+    public function referralBonus($user, $orderReg)
     {
-        DB::transaction(function () use ($user) {
+        DB::transaction(function () use ($user, $orderReg) {
             
             $referrerId = $user->referrer_id ?? ($user->referrer ? $user->referrer->id : null);
 
@@ -28,7 +28,7 @@ class PointService
                 
                 $exists = PointTransaction::where('user_id', $referrer->id)
                     ->where('source', 'referral')
-                    ->where('reference_id', $user->id)
+                    ->where('reference_id', $orderReg)
                     ->exists();
 
                 if (!$exists) {
@@ -40,8 +40,8 @@ class PointService
                         'bonus_amount' => 200,
                         'bonus_status' => 'credit',
                         'source'       => 'referral',
-                        'reference_id' => $user->id,
-                        'note'         => 'Direct referral bonus from User ID: ' . $user->id,
+                        'reference_id' => $orderReg,
+                        'note'         => 'Direct referral bonus from User ID: ' . $orderReg,
                     ]);
 
                     $referrer->increment('wallet_balance', 200);

@@ -242,15 +242,20 @@ class OrderController extends Controller
             // }
 
             if ($statusKey === 'delivered') {
-                $exists = PointTransaction::where('reference_id', $order->reg)
-                    ->where('source', 'purchase')
-                    ->exists();
+                $user = User::find($order->user_id);
 
-                if (!$exists) {
-                    $user = User::find($order->user_id);
-                    if ($user && $order->point > 0) {
-                        $this->pointService->distributeOrderPoints($user, (int)$order->point, $order->reg);
+                if ($user) {
+                    $exists = PointTransaction::where('reference_id', $order->reg)
+                        ->where('source', 'purchase')
+                        ->exists();
+
+                    if (!$exists) {
+                        if ($order->point > 0) {
+                            $this->pointService->distributeOrderPoints($user, (int)$order->point, $order->reg);
+                        }
                     }
+
+                    $this->pointService->referralBonus($user, $order->reg);
                 }
             }
 

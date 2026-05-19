@@ -243,20 +243,20 @@ class OrderController extends Controller
 
             if ($statusKey === 'delivered') {
                 $user = User::find($order->user_id);
+                if (!$user) return;
 
-                if ($user) {
-                    $exists = PointTransaction::where('reference_id', $order->reg)
-                        ->where('source', 'purchase')
-                        ->exists();
+                $exists = PointTransaction::where('reference_id', $order->reg)
+                    ->where('source', 'purchase')
+                    ->exists();
 
-                    if (!$exists) {
-                        if ($order->point > 0) {
-                            $this->pointService->distributeOrderPoints($user, (int)$order->point, $order->reg);
-                        }
+                if (!$exists) {
+                    if ($order->point > 0) {
+                        $this->pointService->distributeOrderPoints($user, (int)$order->point, $order->reg);
                     }
-
-                    $this->pointService->referralBonus($user, $order->reg);
                 }
+
+                // referral bonus always safe guarded inside service
+                $this->pointService->referralBonus($user, $order->reg, (int)$order->point);
             }
 
             DB::commit();

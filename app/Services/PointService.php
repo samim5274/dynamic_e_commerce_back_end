@@ -11,9 +11,9 @@ use App\Models\PointTransaction;
 class PointService
 {
     // 1. Referral Bonus
-    public function referralBonus($user, $orderReg)
+    public function referralBonus($user, $orderReg, $orderPoint)
     {
-        DB::transaction(function () use ($user, $orderReg) {
+        DB::transaction(function () use ($user, $orderReg, $orderPoint) {
             
             $referrerId = $user->referrer_id ?? ($user->referrer ? $user->referrer->id : null);
 
@@ -23,29 +23,35 @@ class PointService
             }
 
             $referrer = User::lockForUpdate()->find($referrerId);
+            if (!$referrer) return;
 
             if ($referrer) {
                 
                 $exists = PointTransaction::where('user_id', $referrer->id)
                     ->where('source', 'referral')
-                    ->where('reference_id', $orderReg)
+                    ->where('reference_id', (string)$orderReg)
                     ->exists();
-
-                if (!$exists) {
                     
-                    PointTransaction::create([
-                        'user_id'      => $referrer->id,
-                        'type'         => 'bonus',
-                        'points'       => 0, 
-                        'bonus_amount' => 200,
-                        'bonus_status' => 'credit',
-                        'source'       => 'referral',
-                        'reference_id' => $orderReg,
-                        'note'         => 'Direct referral bonus from User ID: ' . $orderReg,
-                    ]);
+                if ($exists) return; 
 
-                    $referrer->increment('wallet_balance', 200);
-                }
+                // 1 point = 2 bonus
+                $bonusAmount = (int)$orderPoint * 2;
+
+                // optional safety check
+                if ($bonusAmount <= 0) return;
+
+                PointTransaction::create([
+                    'user_id'      => $referrer->id,
+                    'type'         => 'bonus',
+                    'points'       => 0, 
+                    'bonus_amount' => $bonusAmount,
+                    'bonus_status' => 'credit',
+                    'source'       => 'referral',
+                    'reference_id' => (string)$orderReg,
+                    'note'         => 'Direct referral bonus from User ID: ' . $orderReg,
+                ]);
+
+                $referrer->increment('wallet_balance', $bonusAmount);
             }
         });
     }

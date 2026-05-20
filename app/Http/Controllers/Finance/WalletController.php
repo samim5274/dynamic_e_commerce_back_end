@@ -412,4 +412,43 @@ class WalletController extends Controller
             ], 500);
         }
     }
+
+    public function getTransaction(string $transaction_id, int $user_id)
+    {
+        try {
+
+            $transaction = Transaction::with('user')
+                ->where('transaction_id', $transaction_id)
+                ->where('user_id', $user_id)
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaction not found.',
+                    'data' => null,
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaction fetched successfully.',
+                'data' => $transaction,
+            ]);
+
+        } catch (\Throwable $e) {
+
+            \Log::error('Transaction fetch failed', [
+                'transaction_id' => $transaction_id,
+                'user_id' => $user_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
 }

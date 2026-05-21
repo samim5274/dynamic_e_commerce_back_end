@@ -258,5 +258,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/withdraw/verify-otp', [ WalletController::class, 'verifyOtp']);
         Route::delete('/transaction/{id}', [ WalletController::class, 'transectionDelete']);
         Route::get('/transection-details/{transaction_id}/{user_id}', [WalletController::class, 'getTransaction']);
+        Route::put('/update-status/{id}', [WalletController::class, 'updateStatus']);
     });
 });

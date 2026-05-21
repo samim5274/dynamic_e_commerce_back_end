@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Exception;
+use Throwable;
 
 use App\Models\User;
 use App\Models\PointTransaction;
@@ -116,8 +117,10 @@ class WalletController extends Controller
                 ], 401);
             }
 
-            $data = Transaction::with('user')->where('status', 'processing')
-                ->where('user_id', $userId)->latest()
+            $data = Transaction::with('user')
+                ->where('status', '!=', 'cancelled')
+                // ->where('user_id', $userId)
+                ->latest()
                 ->get();
 
             return response()->json([
@@ -448,6 +451,68 @@ class WalletController extends Controller
                 'success' => false,
                 'message' => 'Something went wrong.',
                 'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            // Validation
+            $validated = $request->validate([
+                'status' => 'required|in:pending,processing,paid,rejected,cancelled',
+                'admin_note' => 'nullable|string|max:1000',
+            ]);
+
+            // Find transaction
+            $transaction = Transaction::findOrFail($id);
+
+            // Optional: check if already same status
+            if (
+                $transaction->status === $validated['status'] &&
+                $transaction->admin_note === ($validated['admin_note'] ?? null)
+            ) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No changes detected.',
+                    'data' => $transaction,
+                ], 200);
+            }
+
+            $userId = Auth::id();
+
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized user.'
+                ], 401);
+            }
+
+            // Update safely
+            $transaction->update([
+                'status' => $validated['status'],
+                'admin_note' => $validated['admin_note'] ?? null,
+                'processed_by' => $userId,
+                'processed_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaction status updated successfully.',
+                'data' => $transaction->fresh(),
+            ], 200);
+
+        } catch (Throwable $e) {
+
+            // Log error for debugging
+            Log::error('Transaction status update failed', [
+                'transaction_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong. Please try again later.',
             ], 500);
         }
     }

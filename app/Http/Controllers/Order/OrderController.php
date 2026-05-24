@@ -29,7 +29,7 @@ class OrderController extends Controller
             $orders = Order::with('user')
                 ->where('status', '!=' , 'Delivered')
                 ->where('status', '!=' , 'Cancelled')
-                ->get();
+                ->latest()->get();
 
             return response()->json([
                 'success' => true,

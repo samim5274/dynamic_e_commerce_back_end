@@ -445,7 +445,7 @@ class CustomerController extends Controller
     public function getOrders(){
         try{
             $userId = Auth::id();
-            $orders = Order::with('user')->where('user_id', $userId)->get();
+            $orders = Order::with('user')->where('user_id', $userId)->latest()->get();
 
             return response()->json([
                 'success' => true,

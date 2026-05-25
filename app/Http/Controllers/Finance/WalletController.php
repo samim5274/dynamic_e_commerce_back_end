@@ -119,6 +119,7 @@ class WalletController extends Controller
 
             $data = Transaction::with('user')
                 ->where('status', '!=', 'cancelled')
+                ->where('status', '!=', 'pending')
                 // ->where('user_id', $userId)
                 ->latest()
                 ->get();
@@ -160,9 +161,11 @@ class WalletController extends Controller
         try {
             return DB::transaction(function () use ($validated, $user, $request) {
 
+                $user = User::lockForUpdate()->find($user->id);
+
                 //  LOCK SAFE BALANCE CHECK (prevent double withdraw)
                 $balanceData = PointTransaction::where('user_id', $user->id)
-                    ->sharedLock()
+                    ->lockForUpdate()
                     ->selectRaw("
                         SUM(CASE WHEN bonus_status = 'credit' THEN bonus_amount ELSE 0 END) -
                         SUM(CASE WHEN bonus_status = 'debit' THEN bonus_amount ELSE 0 END) AS balance
@@ -212,7 +215,8 @@ class WalletController extends Controller
                 ]);
 
                 // ইউজার টেবিল ব্যালেন্স আপডেট (যদি কলাম থাকে)
-                $user->decrement('wallet_balance', $amount);
+                $user->wallet_balance = round($user->wallet_balance - $amount, 2);
+                $user->save();
 
                 // OTP generate
                 $otp = random_int(100000, 999999);

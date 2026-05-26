@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Exception;
 
 use App\Models\User;
@@ -335,7 +336,8 @@ class CustomerController extends Controller
         }
     }
 
-    public function getRootUsers(Request $request){
+    public function getRootUsers(Request $request)
+    {
         try {
             $authUser = $request->user();
 
@@ -739,6 +741,133 @@ class CustomerController extends Controller
                 'success' => false,
                 'message' => 'Update failed.',
                 'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    public function storeOrder(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|integer|exists:products,id',
+            'user_id'    => 'required|string|min:4|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        try{
+
+            return DB::transaction(function () use ($request) {
+                /*
+                |--------------------------------------------------------------------------
+                | Find User
+                |--------------------------------------------------------------------------
+                */
+
+                $user = User::where('user_id', $request->user_id)->first();
+
+                if (!$user) {
+                    throw new \Exception('User not found');
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Generate Order Registration
+                |--------------------------------------------------------------------------
+                */
+
+                $reg = RegGenerator::generateOrderReg($user->id);
+
+                if (!$reg) {
+                    throw new \Exception('Reg generation failed');
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Product Fetch
+                |--------------------------------------------------------------------------
+                */
+
+                $product = Product::find($request->product_id);
+                if (!$product) {
+                    throw new \Exception('Product not found');
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Variant Handling
+                |--------------------------------------------------------------------------
+                */
+                $variant = ProductVariant::where('product_id', $product->id)
+                    ->orderBy('id', 'asc')
+                    ->first();
+
+                if (!$variant) {
+                    throw new \Exception('No variant found for product');
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Price Calculation
+                |--------------------------------------------------------------------------
+                */
+                $basePrice = $variant->price ?? $product->price;
+                $discount  = $variant->discount_price ?? 0;
+
+                $finalPrice = max($basePrice - $discount, 0);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Check Existing Cart Item
+                |--------------------------------------------------------------------------
+                */
+                $cartItem = Cart::where('reg', $reg)
+                    ->where('product_id', $product->id)
+                    ->where('variant_id', $variant->id)
+                    ->first();
+
+                if ($cartItem) {
+                    throw new \Exception('Item already exists in cart.');
+                } else {
+                    DB::transaction(function () use ($request, $user, $product, $variant, $reg, $finalPrice, $discount) {
+
+                        Cart::create([
+                            'reg'        => $reg,
+                            'user_id'    => $user->id,
+                            'product_id' => $product->id,
+                            'variant_id' => $variant->id,
+                            'quantity'   => 1,
+                            'price'      => $finalPrice,
+                            'discount'   => $discount,
+                            'point'      => $product->point ?? 0,
+                        ]);
+
+                        $this->ensureOrderExists($user, $reg);
+                    });
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product added to order successfully.',
+                    'data' => [
+                        'reg' => $reg,
+                        'order_id' => $order->id ?? null,
+                    ],
+                ]);
+            });
+        } catch (\Throwable $e) {
+            Log::error('ORDER STORE ERROR', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

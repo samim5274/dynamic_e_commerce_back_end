@@ -107,7 +107,7 @@ class OrderController extends Controller
 
     public function statusFilter(){
         try{
-            $orders = Order::with('user')->get();
+            $orders = Order::with('user')->latest()->get();
 
             return response()->json([
                 'success' => true,

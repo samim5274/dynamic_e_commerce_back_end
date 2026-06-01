@@ -160,6 +160,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/', [CustomerController::class, 'getOrders']);
             Route::post('/store', [CustomerController::class, 'storeOrder']);
         });
+
+        Route::prefix('dashboard')->group(function() {
+            Route::get('/', [CustomerController::class, 'dashboard']);
+        });
     });
 });
 

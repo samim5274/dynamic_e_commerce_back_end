@@ -21,6 +21,8 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Cart;
 use App\Models\ProductVariant;
+use App\Models\PointTransaction;
+use App\Models\Transaction;
 
 class CustomerController extends Controller
 {
@@ -870,5 +872,110 @@ class CustomerController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function dashboard()
+    {
+        try {
+            // Get logged in user
+            $userId = Auth::id();
+
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized user.'
+                ], 401);
+            }
+
+            // fetched User details
+            $user = User::find($userId);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found.'
+                ], 404);
+            }
+
+            // Credit calculation
+            $credit = PointTransaction::where('user_id', $userId)
+                ->where('bonus_status', 'credit')
+                ->sum('bonus_amount');
+
+            // Debit calculation
+            $debit = PointTransaction::where('user_id', $userId)
+                ->where('bonus_status', 'debit')
+                ->sum('bonus_amount'); 
+                
+            // Final balance
+            $balance = $credit - $debit;
+
+            // PENDING
+            $pending = Transaction::where('user_id', $userId)
+                ->where('status', 'pending')
+                ->sum('amount');
+
+
+            $leftMember  = $this->getDownlineCount($userId, 'left');
+            $rightMember = $this->getDownlineCount($userId, 'right');
+
+            $totalRefer = $leftMember + $rightMember;
+            
+            // Example: calculate user stats
+            $status = [
+                'total_member' => $leftMember + $rightMember,
+                'total_refer'  => $totalRefer,
+
+                'total_point'  => (int) $user->own_total_point,
+                'total_match'  => (int) $user->total_match,
+
+                'left_member'  => $leftMember,
+                'right_member' => $rightMember,
+
+                'left_point'   => (int) $user->left_total_point,
+                'right_point'  => (int) $user->right_total_point,
+
+                'left_carry'   => (int) $user->left_carry_point,
+                'right_carry'  => (int) $user->right_carry_point,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Withdrawal data fetched successfully.',
+                'data' => [
+                    'balance' => (float) $balance,
+                    'pending' => (float) $pending,
+                    'credit'  => (float) $credit,
+                    'user'    => $user,
+                    'status'  => $status,
+                ]
+            ], 200);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while fetching withdrawal data.',
+                'error'   => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    private function getDownlineCount($userId, $side = null)
+    {
+        $count = 0;
+
+        // direct children
+        $children = User::where('parent_id', $userId)->get();
+
+        foreach ($children as $child) {
+
+            // IMPORTANT: DO NOT filter child itself
+            $count++;
+
+            // go deeper
+            $count += $this->getDownlineCount($child->id, $side);
+        }
+
+        return $count;
     }
 }

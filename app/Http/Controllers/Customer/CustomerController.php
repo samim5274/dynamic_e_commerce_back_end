@@ -9,6 +9,7 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -896,40 +897,43 @@ class CustomerController extends Controller
                 ], 404);
             }
 
-            // Credit calculation
-            $credit = PointTransaction::where('user_id', $userId)
-                ->where('bonus_status', 'credit')
-                ->sum('bonus_amount');
+            $wallet = PointTransaction::where('user_id', $userId)
+                ->selectRaw("
+                    COALESCE(SUM(CASE WHEN bonus_status = 'credit' THEN bonus_amount ELSE 0 END),0) as credit,
+                    COALESCE(SUM(CASE WHEN bonus_status = 'debit' THEN bonus_amount ELSE 0 END),0) as debit,
 
-            // Debit calculation
-            $debit = PointTransaction::where('user_id', $userId)
-                ->where('bonus_status', 'debit')
-                ->sum('bonus_amount'); 
-                
-            // Final balance
-            $balance = $credit - $debit;
+                    COALESCE(SUM(CASE WHEN source = 'earn' THEN bonus_amount ELSE 0 END),0) as earn,
+                    COALESCE(SUM(CASE WHEN source = 'spend' THEN bonus_amount ELSE 0 END),0) as spend,
+                    COALESCE(SUM(CASE WHEN source = 'bonus' THEN bonus_amount ELSE 0 END),0) as bonus,
+                    COALESCE(SUM(CASE WHEN source = 'matching' THEN bonus_amount ELSE 0 END),0) as matching,
+                    COALESCE(SUM(CASE WHEN source = 'withdraw' THEN bonus_amount ELSE 0 END),0) as withdraw,
+                    COALESCE(SUM(CASE WHEN source = 'refund' THEN bonus_amount ELSE 0 END),0) as refund
+                ")
+                ->first();
+
+            $balance = $wallet->credit - $wallet->debit;
 
             // PENDING
             $pending = Transaction::where('user_id', $userId)
                 ->where('status', 'pending')
                 ->sum('amount');
 
+            $withdraw = Transaction::where('user_id', $userId)
+                ->where('status', 'paid')
+                ->sum('net_amount');
 
-            $leftMember  = $this->getDownlineCount($userId, 'left');
-            $rightMember = $this->getDownlineCount($userId, 'right');
-
-            $totalRefer = $leftMember + $rightMember;
+            $networkStats = $this->getUserNetworkStats($userId);
             
             // Example: calculate user stats
             $status = [
-                'total_member' => $leftMember + $rightMember,
-                'total_refer'  => $totalRefer,
+                'total_member' => $networkStats['total_member'],
+                'total_refer'  => $networkStats['total_refer'],
 
                 'total_point'  => (int) $user->own_total_point,
                 'total_match'  => (int) $user->total_match,
 
-                'left_member'  => $leftMember,
-                'right_member' => $rightMember,
+                'left_member'  => (int) $networkStats['left_member'],
+                'right_member' => (int) $networkStats['right_member'],
 
                 'left_point'   => (int) $user->left_total_point,
                 'right_point'  => (int) $user->right_total_point,
@@ -942,11 +946,22 @@ class CustomerController extends Controller
                 'success' => true,
                 'message' => 'Withdrawal data fetched successfully.',
                 'data' => [
-                    'balance' => (float) $balance,
-                    'pending' => (float) $pending,
-                    'credit'  => (float) $credit,
-                    'user'    => $user,
-                    'status'  => $status,
+                    'balance'        => (float) $balance,
+
+                    'credit'         => (float) $wallet->credit,
+                    'debit'          => (float) $wallet->debit,
+                    
+                    'earn'           => (float) $wallet->earn,
+                    'spend'          => (float) $wallet->spend,
+                    'bonus'          => (float) $wallet->bonus,
+                    'matching'       => (float) $wallet->matching,
+                    'withdraw'       => (float) $wallet->withdraw,
+                    'refund'         => (float) $wallet->refund,
+
+                    'pending'        => (float) $pending,
+
+                    'user'           => $user,
+                    'status'         => $status,
                 ]
             ], 200);
 
@@ -960,22 +975,57 @@ class CustomerController extends Controller
         }
     }
 
-    private function getDownlineCount($userId, $side = null)
+    public function getUserNetworkStats($userId)
     {
-        $count = 0;
+        // Cache wrapping with dynamic key - 10 minutes cache runtime deya holo
+        return Cache::remember("network_stats_{$userId}", now()->addMinutes(10), function () use ($userId) {
+            
+            // 1. Direct sponsor count via indexed query fast execution
+            $totalRefer = User::where('refer_id', $userId)->count();
 
-        // direct children
-        $children = User::where('parent_id', $userId)->get();
+            $currentUser = User::select('id', 'left_child_id', 'right_child_id')->find($userId);
+            if (!$currentUser) {
+                return [
+                    'left_member'  => 0,
+                    'right_member' => 0,
+                    'total_member' => 0,
+                    'total_refer'  => $totalRefer
+                ];
+            }
 
-        foreach ($children as $child) {
+            // 2. High-Performance Recursive Function using DB Native Memory
+            $getDownlineCount = function ($startNodeId) {
+                if (!$startNodeId) return 0;
 
-            // IMPORTANT: DO NOT filter child itself
-            $count++;
+                // Raw SQL Recursive CTE query format (Runs inside DB, avoids PHP memory bloat)
+                // It will scale perfectly even with 500k+ users
+                $bindings = [$startNodeId];
+                $sql = "
+                    WITH RECURSIVE downline AS (
+                        SELECT id FROM users WHERE id = ?
+                        UNION ALL
+                        SELECT u.id FROM users u
+                        INNER JOIN downline d ON u.parent_id = d.id
+                    )
+                    SELECT COUNT(*) - 1 as total_count FROM downline;
+                ";
 
-            // go deeper
-            $count += $this->getDownlineCount($child->id, $side);
-        }
+                $result = DB::select($sql, $bindings);
+                return isset($result[0]) ? (int) $result[0]->total_count : 0;
+            };
 
-        return $count;
+            // Calculate binary nodes tree structure independently without loading model stack
+            $leftMember  = $currentUser->left_child_id ? (1 + $getDownlineCount($currentUser->left_child_id)) : 0;
+            $rightMember = $currentUser->right_child_id ? (1 + $getDownlineCount($currentUser->right_child_id)) : 0;
+
+            $totalMember = $leftMember + $rightMember;
+
+            return [
+                'left_member'  => $leftMember,
+                'right_member' => $rightMember,
+                'total_member' => $totalMember,
+                'total_refer'  => $totalRefer,
+            ];
+        });
     }
 }

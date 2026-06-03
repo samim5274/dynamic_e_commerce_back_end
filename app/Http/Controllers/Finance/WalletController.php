@@ -140,6 +140,37 @@ class WalletController extends Controller
         }
     }
 
+    public function superAdminTransection()
+    {
+        try {
+            // Get logged in user
+            $userId = Auth::id();
+
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized user.'
+                ], 401);
+            }
+
+            $data = Transaction::with('user')->latest()->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Withdrawal data fetched successfully.',
+                'data' => $data,
+            ], 200);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while fetching withdrawal data.',
+                'error'   => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         // 1. Validate Request

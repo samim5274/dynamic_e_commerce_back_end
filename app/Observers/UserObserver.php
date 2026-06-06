@@ -65,7 +65,7 @@ class UserObserver
         }
 
         // র্যাঙ্ক যদি পরিবর্তন হয় (আগের চেয়ে আপগ্রেড হয়)
-        if ($user->isDirty('rank') || $user->rank !== $newRank) {
+        if ($user->rank !== $newRank) {
             
             $oldRank = $user->rank;
             $user->rank = $newRank;
@@ -135,5 +135,39 @@ class UserObserver
             $user->left_child_id &&
             $user->right_child_id
         ) ? true : false;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Designation Calculation
+        |--------------------------------------------------------------------------
+        |
+        | Dynamic Star  = Direct Referral >= 10
+        | Dynamic Club  = Directly Referred Dynamic Star >= 10
+        |
+        */
+
+        // $totalReferrals = User::where('refer_id', $user->id)->count();
+
+        // if ($totalReferrals >= 10) {
+        //     $user->designation = 'Dynamic Star';
+        // } else {
+        //     $user->designation = null;
+        // }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Dynamic Club
+        |--------------------------------------------------------------------------
+        */
+
+        // $dynamicStarCount = User::where('refer_id', $user->id)
+        //     ->where('designation', 'Dynamic Star')
+        //     ->count();
+
+        // if ($dynamicStarCount >= 10) {
+        //     $user->designation = 'Dynamic Club';
+        // }
     }
 }

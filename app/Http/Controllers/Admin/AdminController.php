@@ -34,7 +34,7 @@ class AdminController extends Controller
         //
     }
 
-    public function transection()
+    public function transaction()
     {
         try {
             // Get logged in user
@@ -94,6 +94,54 @@ class AdminController extends Controller
         }
     }
 
+    public function addMoneyStarClub(Request $request, $user_id)
+    {
+        $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user = User::findOrFail($user_id);
+
+            // Create transaction
+            $transaction = new PointTransaction();
+            $transaction->user_id = $user->id;
+            $transaction->type = 'bonus';
+            $transaction->points = 0;
+            $transaction->bonus_amount = $request->amount;
+            $transaction->bonus_status = 'credit';
+            $transaction->source = 'star_club';
+            $transaction->note = 'Star Club bonus amount added';
+            $transaction->save();
+
+            // Update user designation
+            $user->designation = 'star_club';
+            $user->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Money added successfully.',
+                'data' => [
+                    'user_id' => $user->id,
+                    'amount' => $transaction->bonus_amount,
+                    'designation' => $user->designation,
+                ]
+            ], 200);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
     public function dynamicClubUsers()
     {
         try {
@@ -102,18 +150,18 @@ class AdminController extends Controller
                 return User::query()
                     ->select('users.*')
                     // ১. মূল ইউজারের ডেজিগনেশন 'star club' হতে হবে
-                    ->where('designation', 'star club') 
-                    
+                    ->where('designation', 'star_club')
+
                     // ২. শুধুমাত্র সেই স্টার ক্লাব রেফারালগুলো কাউন্ট হবে যাদের ডেজিগনেশনও 'star club'
                     ->withCount(['referrals as star_referrals_count' => function ($q) {
-                        $q->where('designation', 'star club');
+                        $q->where('designation', 'star_club');
                     }])
-                    
+
                     // ৩. ডাটাবেস লেভেলেই ফিল্টার: এমন ইউজার যাদের এই নির্দিষ্ট রেফারাল সংখ্যা ১০ বা তার বেশি
                     ->whereHas('referrals', function ($q) {
-                        $q->where('designation', 'star club');
+                        $q->where('designation', 'star_club');
                     }, '>=', 10)
-                    
+
                     // ৪. ডাটাবেস থেকেই বড় থেকে ছোট ক্রমানুসারে সাজিয়ে আনা
                     ->orderByDesc('star_referrals_count')
                     ->get();

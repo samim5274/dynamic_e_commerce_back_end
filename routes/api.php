@@ -286,8 +286,11 @@ Route::middleware('auth:sanctum')->group(function () {
 use App\Http\Controllers\Admin\AdminController;
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('super-admin')->group(function () {
-        Route::get('/transaction', [ AdminController::class, 'transection']);
+        Route::get('/transaction', [ AdminController::class, 'transaction']);
+
         Route::get('/star-club/users', [AdminController::class, 'starClubUsers']);
+        Route::post('/star-club/add-money/{user_id}', [AdminController::class, 'addMoneyStarClub']);
+
         Route::get('/dynamic-club/users', [AdminController::class, 'dynamicClubUsers']);
     });
 });

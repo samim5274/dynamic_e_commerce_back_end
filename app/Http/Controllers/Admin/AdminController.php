@@ -31,7 +31,24 @@ class AdminController extends Controller
 
     public function index()
     {
-        //
+        try {
+
+            $data = User::all();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Users data fetched successfully.',
+                'data' => $data,
+            ], 200);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while fetching users data.',
+                'error'   => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
     public function transaction()

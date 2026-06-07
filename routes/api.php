@@ -294,5 +294,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/dynamic-club/users', [AdminController::class, 'dynamicClubUsers']);
         Route::post('/dynamic-club/add-money/{user_id}', [AdminController::class, 'addMoneyDynamicClub']);
+
+        Route::post('/add-money/{user_id}', [AdminController::class, 'addMoney']);
     });
 });

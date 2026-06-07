@@ -902,12 +902,12 @@ class CustomerController extends Controller
                     COALESCE(SUM(CASE WHEN bonus_status = 'credit' THEN bonus_amount ELSE 0 END),0) as credit,
                     COALESCE(SUM(CASE WHEN bonus_status = 'debit' THEN bonus_amount ELSE 0 END),0) as debit,
 
-                    COALESCE(SUM(CASE WHEN source = 'earn' THEN bonus_amount ELSE 0 END),0) as earn,
-                    COALESCE(SUM(CASE WHEN source = 'spend' THEN bonus_amount ELSE 0 END),0) as spend,
-                    COALESCE(SUM(CASE WHEN source = 'bonus' THEN bonus_amount ELSE 0 END),0) as bonus,
-                    COALESCE(SUM(CASE WHEN source = 'matching' THEN bonus_amount ELSE 0 END),0) as matching,
-                    COALESCE(SUM(CASE WHEN source = 'withdraw' THEN bonus_amount ELSE 0 END),0) as withdraw,
-                    COALESCE(SUM(CASE WHEN source = 'refund' THEN bonus_amount ELSE 0 END),0) as refund
+                    COALESCE(SUM(CASE WHEN type = 'earn' THEN bonus_amount ELSE 0 END),0) as earn,
+                    COALESCE(SUM(CASE WHEN type = 'spend' THEN bonus_amount ELSE 0 END),0) as spend,
+                    COALESCE(SUM(CASE WHEN type = 'bonus' THEN bonus_amount ELSE 0 END),0) as bonus,
+                    COALESCE(SUM(CASE WHEN type = 'matching' THEN bonus_amount ELSE 0 END),0) as matching,
+                    COALESCE(SUM(CASE WHEN type = 'withdraw' THEN bonus_amount ELSE 0 END),0) as withdraw,
+                    COALESCE(SUM(CASE WHEN type = 'refund' THEN bonus_amount ELSE 0 END),0) as refund
                 ")
                 ->first();
 

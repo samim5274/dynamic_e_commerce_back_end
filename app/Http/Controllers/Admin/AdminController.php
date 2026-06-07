@@ -33,7 +33,7 @@ class AdminController extends Controller
     {
         try {
 
-            $data = User::all();
+            $data = User::where('role', '!=', 'super_admin')->get();
 
             return response()->json([
                 'success' => true,
@@ -135,6 +135,7 @@ class AdminController extends Controller
 
             // Update user designation
             $user->designation = 'star_club';
+            $user->wallet_balance = ($user->wallet_balance ?? 0) + $request->amount;
             $user->save();
 
             DB::commit();
@@ -225,6 +226,7 @@ class AdminController extends Controller
 
             // Update user designation
             $user->designation = 'dynamic_club';
+            $user->wallet_balance = ($user->wallet_balance ?? 0) + $request->amount;
             $user->save();
 
             DB::commit();
@@ -245,6 +247,61 @@ class AdminController extends Controller
                 'success' => false,
                 'message' => 'Something went wrong.',
                 'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    public function addMoney(Request $request, $user_id)
+    {
+        $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user = User::findOrFail($user_id);
+
+            // Create transaction
+            $transaction = new PointTransaction();
+            $transaction->user_id = $user->id;
+            $transaction->type = 'spend';
+            $transaction->points = 0;
+            $transaction->bonus_amount = $request->amount;
+            $transaction->bonus_status = 'credit';
+            $transaction->source = 'add_money_from_super_admin';
+            $transaction->note = 'Add money from DBMBL';
+            $transaction->save();
+
+            // Update user designation
+            $user->wallet_balance = ($user->wallet_balance ?? 0) + $request->amount;
+            $user->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Money added successfully.',
+                'data' => [
+                    'user_id' => $user->id,
+                    'amount' => $transaction->bonus_amount,
+                    'designation' => $user->designation,
+                ]
+            ], 200);
+
+        } catch (Exception $e) {
+
+            DB::rollBack();
+
+            \Log::error('Add Money Error', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

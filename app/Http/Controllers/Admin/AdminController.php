@@ -183,4 +183,52 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
+    public function addMoneyDynamicClub(Request $request, $user_id)
+    {
+        $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user = User::findOrFail($user_id);
+
+            // Create transaction
+            $transaction = new PointTransaction();
+            $transaction->user_id = $user->id;
+            $transaction->type = 'bonus';
+            $transaction->points = 0;
+            $transaction->bonus_amount = $request->amount;
+            $transaction->bonus_status = 'credit';
+            $transaction->source = 'dynamic_club';
+            $transaction->note = 'Dynamic Club bonus amount added';
+            $transaction->save();
+
+            // Update user designation
+            $user->designation = 'dynamic_club';
+            $user->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Money added successfully.',
+                'data' => [
+                    'user_id' => $user->id,
+                    'amount' => $transaction->bonus_amount,
+                    'designation' => $user->designation,
+                ]
+            ], 200);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
 }

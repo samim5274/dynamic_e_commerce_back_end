@@ -328,11 +328,11 @@ class AdminController extends Controller
         try {
 
             $request->validate([
-                'user_id' => ['required', 'integer', 'exists:users,id'],
-                'role'   => ['required', 'string', 'in:customer,admin','super_admin'],
+                'user_id'   => ['required', 'integer', 'exists:users,id'],
+                'role'      => ['required', 'string', 'in:customer,admin,super_admin'],
             ]);
 
-            $user = User::where('id', $request->id)->first();
+            $user = User::where('id', $request->user_id)->first();
 
             if (!$user) {
                 return response()->json([

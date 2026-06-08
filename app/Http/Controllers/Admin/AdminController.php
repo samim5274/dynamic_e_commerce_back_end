@@ -305,4 +305,76 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
+    public function getUserDetails($user_id){
+        try{
+            $customer = User::where('user_id', $user_id)->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer Details fetched successfully.',
+                'data' => $customer,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch customer details. Please try again later.',
+            ], 500);
+        }
+    }
+
+    public function changeUserRole(Request $request)
+    {
+        try {
+
+            $request->validate([
+                'user_id' => ['required', 'integer', 'exists:users,id'],
+                'role'   => ['required', 'string', 'in:customer,admin','super_admin'],
+            ]);
+
+            $user = User::where('id', $request->id)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User profile not found.',
+                ], 404);
+            }
+
+            $user->update([
+                'role' => $request->role,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User role updated successfully.',
+                'data' => [
+                    'user_id' => $user->user_id,
+                    'role'    => $user->role,
+                ]
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors'  => $e->errors(),
+            ], 422);
+
+        } catch (\Throwable $e) {
+
+            Log::error('User role update failed', [
+                'user_id' => $request->user_id ?? null,
+                'role'    => $request->role ?? null,
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while updating user role.',
+            ], 500);
+        }
+    }
 }

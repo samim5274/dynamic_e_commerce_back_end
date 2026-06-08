@@ -234,6 +234,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/update-status/{reg}', [OrderController::class, 'updateStatus']);
         Route::get('/customer/{user_id}', [OrderController::class, 'getCustomerDetails']);
         Route::post('/confirm/{reg}', [OrderController::class, 'confirmOrder']);
+
+        Route::get('/reports/sale', [OrderController::class, 'reportSale']);
     });
 });
 

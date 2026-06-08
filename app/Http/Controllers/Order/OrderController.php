@@ -23,7 +23,7 @@ class OrderController extends Controller
     {
         $this->pointService = $pointService;
     }
-    
+
     public function index(){
         try{
             $orders = Order::with('user')
@@ -301,6 +301,24 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch customer details. Please try again later.',
+            ], 500);
+        }
+    }
+
+    public function reportSale()
+    {
+        try{
+            $orders = Order::with('user')->latest()->paginate(20);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Orders fetched successfully.',
+                'data' => $orders,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch orders. Please try again later.',
             ], 500);
         }
     }

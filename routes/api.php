@@ -110,6 +110,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/get-subcategories', [ProductController::class, 'getSubCategory']);
         Route::get('/get-brands', [ProductController::class, 'getBrand']);
 
+        // Product sale report Route
+        Route::get('/report', [ProductController::class, 'reportSale']);
+
         // LAST: dynamic route for product details, must be at the end of all product routes
         Route::post('/update/{id}', [ProductController::class, 'edit'])->where('id', '[0-9]+');
         Route::delete('/delete/{id}', [ProductController::class, 'delete'])->where('id', '[0-9]+');

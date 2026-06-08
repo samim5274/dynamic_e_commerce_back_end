@@ -509,4 +509,27 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    public function reportSale()
+    {
+        try{
+            $products = Product::with([
+                'category:id,name',
+                'subcategory:id,name',
+                'brand:id,name',
+                'images:id,product_id,image_path,is_primary'
+            ])->latest()->paginate(20);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Products fetched successfully.',
+                'data' => $products
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Products can not fetched.',
+            ], 500);
+        }
+    }
 }

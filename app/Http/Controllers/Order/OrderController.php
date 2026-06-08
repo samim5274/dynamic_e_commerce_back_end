@@ -322,4 +322,35 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    public function reportSaleFilter(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'nullable|date|date_format:Y-m-d',
+            'end_date'   => 'nullable|date|date_format:Y-m-d|after_or_equal:start_date',
+        ]);
+        
+        try{
+            $orders = Order::with('user:id,user_id,name,email')
+                ->whereBetween('date', [
+                    $request->start_date ?? now()->startOfDay()->toDateString(),
+                    $request->end_date ?? now()->endOfDay()->toDateString()
+                ])
+                ->latest()
+                ->paginate(20);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Orders fetched successfully.',
+                'data'    => $orders,
+            ], 200);
+        } catch (\Throwable $e) {
+            
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch orders. Please try again later.',
+            ], 500);
+        }
+    }
 }

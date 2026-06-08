@@ -235,7 +235,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/customer/{user_id}', [OrderController::class, 'getCustomerDetails']);
         Route::post('/confirm/{reg}', [OrderController::class, 'confirmOrder']);
 
-        Route::get('/reports/sale', [OrderController::class, 'reportSale']);
+        Route::prefix('reports')->group(function(){
+            Route::get('/sale', [OrderController::class, 'reportSale']);
+            Route::get('/sale/filter', [OrderController::class, 'reportSaleFilter']);
+        });
     });
 });
 

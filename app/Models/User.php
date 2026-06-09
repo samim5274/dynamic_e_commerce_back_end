@@ -19,8 +19,8 @@ class User extends Authenticatable
         'dob', 'gender', 'blood_group', 'national_id', 'religion', 'is_active',
         'present_address', 'permanent_address', 'photo', 'wallet_balance',
         'refer_id','rank', 'is_match',
-        'parent_id', 'left_child_id', 'right_child_id', 
-        
+        'parent_id', 'left_child_id', 'right_child_id',
+
         'left_total_point', 'right_total_point',
         'left_carry_point', 'right_carry_point',
         'own_total_point', 'total_match'
@@ -62,8 +62,8 @@ class User extends Authenticatable
         'is_active' => 'boolean',
         'left_total_point' => 'integer',
         'right_total_point' => 'integer',
-        'own_total_point' => 'integer', 
-        'total_match' => 'integer',     
+        'own_total_point' => 'integer',
+        'total_match' => 'integer',
     ];
 
     // --- Relationships ---
@@ -98,7 +98,7 @@ class User extends Authenticatable
         $credit = $this->pointTransactions()
             ->where('bonus_status', 'credit')
             ->sum('bonus_amount') ?? 0;
-            
+
         $debit = $this->pointTransactions()
             ->where('bonus_status', 'debit')
             ->sum('bonus_amount') ?? 0;
@@ -130,8 +130,8 @@ class User extends Authenticatable
     public function getTotalCalculationAttribute()
     {
         return (int) (
-            ($this->left_total_point ?? 0) + 
-            ($this->right_total_point ?? 0) + 
+            ($this->left_total_point ?? 0) +
+            ($this->right_total_point ?? 0) +
             ($this->own_total_point ?? 0)
         );
     }
@@ -139,5 +139,10 @@ class User extends Authenticatable
     public function isActive()
     {
         return (bool) $this->is_active;
+    }
+
+    public function notice()
+    {
+        return $this->hasMany(Notice::class, 'user_id');
     }
 }

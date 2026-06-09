@@ -278,6 +278,21 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+// ======================
+// Notice Routes
+// ======================
+use App\Http\Controllers\Notice\NoticeController;
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('notice')->group(function () {
+        Route::get('/', [NoticeController::class, 'index']);
+        Route::post('/create', [NoticeController::class, 'create']);
+        // Route::get('/view/{file}', [NoticeController::class, 'attachView']);
+        Route::delete('/delete/{id}', [NoticeController::class, 'delete']);
+        Route::get('/view/{id}', [NoticeController::class, 'viewNotice']);
+        Route::put('/update/{id}', [NoticeController::class, 'updateNotice']);
+        // Route::get('/show-all-notices', [NoticeController::class, 'show']);
+    });
+});
 
 
 

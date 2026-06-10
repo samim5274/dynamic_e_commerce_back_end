@@ -321,6 +321,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/dynamic-club/add-money/{user_id}', [AdminController::class, 'addMoneyDynamicClub']);
 
         Route::post('/add-money/{user_id}', [AdminController::class, 'addMoney']);
+        Route::post('/deduct-money/{user_id}', [AdminController::class, 'deductMoney']);
         Route::get('/user/{user_id}', [AdminController::class, 'getUserDetails']);
         Route::put('/user/change-role', [AdminController::class, 'changeUserRole']);
     });

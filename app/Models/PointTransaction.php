@@ -16,6 +16,11 @@ class PointTransaction extends Model
         'source', 'reference_id', 'note'
     ];
 
+    protected $casts = [
+        'bonus_amount' => 'decimal:2',
+        'points'       => 'integer',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

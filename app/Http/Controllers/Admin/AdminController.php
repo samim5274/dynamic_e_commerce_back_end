@@ -117,45 +117,61 @@ class AdminController extends Controller
             'amount' => ['required', 'numeric', 'min:0.01'],
         ]);
 
+        $adminId = Auth::id();
+
+        if (!$adminId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.'
+            ], 401);
+        }
+
+        $amount = (float) $request->amount;
+
         try {
-            DB::beginTransaction();
+            $result = DB::transaction(function () use ($user_id, $amount) {
 
-            $user = User::findOrFail($user_id);
+                $user = User::where('id', $user_id)->lockForUpdate()->firstOrFail();
 
-            // Create transaction
-            $transaction = new PointTransaction();
-            $transaction->user_id = $user->id;
-            $transaction->type = 'bonus';
-            $transaction->points = 0;
-            $transaction->bonus_amount = $request->amount;
-            $transaction->bonus_status = 'credit';
-            $transaction->source = 'star_club';
-            $transaction->note = 'Star Club bonus amount added';
-            $transaction->save();
+                PointTransaction::create([
+                    'user_id'      => $user->id,
+                    'type'         => 'bonus',
+                    'points'       => 0,
+                    'bonus_amount' => $amount,
+                    'bonus_status' => 'credit',
+                    'source'       => 'star_club',
+                    'note'         => 'Star Club bonus amount added',
+                ]);
 
-            // Update user designation
-            $user->designation = 'star_club';
-            $user->wallet_balance = ($user->wallet_balance ?? 0) + $request->amount;
-            $user->save();
+                $user->designation = 'star_club';
+                $user->save();
 
-            DB::commit();
+                return [
+                    'user_id'     => $user->id,
+                    'amount'      => $amount,
+                    'designation' => $user->designation,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Money added successfully.',
-                'data' => [
-                    'user_id' => $user->id,
-                    'amount' => $transaction->bonus_amount,
-                    'designation' => $user->designation,
-                ]
+                'message' => 'Star Club bonus added successfully.',
+                'data'    => $result
             ], 200);
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
+            Log::error('Star Club Add Money Failed', [
+                'admin_id' => $adminId,
+                'user_id'  => $user_id,
+                'amount'   => $amount,
+                'message'  => $e->getMessage(),
+                'line'     => $e->getLine(),
+                'file'     => $e->getFile(),
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Something went wrong.',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'message' => 'Something went wrong. Please try again.',
             ], 500);
         }
     }
@@ -208,45 +224,61 @@ class AdminController extends Controller
             'amount' => ['required', 'numeric', 'min:0.01'],
         ]);
 
+        $adminId = Auth::id();
+
+        if (!$adminId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.'
+            ], 401);
+        }
+
+        $amount = (float) $request->amount;
+
         try {
-            DB::beginTransaction();
+            $result = DB::transaction(function () use ($user_id, $amount) {
 
-            $user = User::findOrFail($user_id);
+                $user = User::where('id', $user_id)->lockForUpdate()->firstOrFail();
 
-            // Create transaction
-            $transaction = new PointTransaction();
-            $transaction->user_id = $user->id;
-            $transaction->type = 'bonus';
-            $transaction->points = 0;
-            $transaction->bonus_amount = $request->amount;
-            $transaction->bonus_status = 'credit';
-            $transaction->source = 'dynamic_club';
-            $transaction->note = 'Dynamic Club bonus amount added';
-            $transaction->save();
+                PointTransaction::create([
+                    'user_id'      => $user->id,
+                    'type'         => 'bonus',
+                    'points'       => 0,
+                    'bonus_amount' => $amount,
+                    'bonus_status' => 'credit',
+                    'source'       => 'dynamic_club',
+                    'note'         => 'Dynamic Club bonus amount added',
+                ]);
 
-            // Update user designation
-            $user->designation = 'dynamic_club';
-            $user->wallet_balance = ($user->wallet_balance ?? 0) + $request->amount;
-            $user->save();
+                $user->designation = 'dynamic_club';
+                $user->save();
 
-            DB::commit();
+                return [
+                    'user_id'     => $user->id,
+                    'amount'      => $amount,
+                    'designation' => $user->designation,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Money added successfully.',
-                'data' => [
-                    'user_id' => $user->id,
-                    'amount' => $transaction->bonus_amount,
-                    'designation' => $user->designation,
-                ]
+                'message' => 'Dynamic Club bonus added successfully.',
+                'data'    => $result
             ], 200);
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
+            Log::error('Dynamic Club Add Money Failed', [
+                'admin_id' => $adminId,
+                'user_id'  => $user_id,
+                'amount'   => $amount,
+                'message'  => $e->getMessage(),
+                'line'     => $e->getLine(),
+                'file'     => $e->getFile(),
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Something went wrong.',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'message' => 'Something went wrong. Please try again.',
             ], 500);
         }
     }
@@ -255,54 +287,170 @@ class AdminController extends Controller
     {
         $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'note' => ['required', 'string', 'max:255'],
+            'note'   => ['required', 'string', 'max:255'],
         ]);
 
+        $adminId = Auth::id();
+
+        if (!$adminId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.'
+            ], 401);
+        }
+
+        if ((int)$user_id === (int)$adminId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot add money to your own account.'
+            ], 422);
+        }
+
+        $amount = (float) $request->amount;
+
         try {
-            DB::beginTransaction();
+            $result = DB::transaction(function () use ($user_id, $amount, $request) {
 
-            $user = User::findOrFail($user_id);
+                $user = User::where('id', $user_id)->lockForUpdate()->firstOrFail();
 
-            // Create transaction
-            $transaction = new PointTransaction();
-            $transaction->user_id = $user->id;
-            $transaction->type = 'earn';
-            $transaction->points = 0;
-            $transaction->bonus_amount = $request->amount;
-            $transaction->bonus_status = 'credit';
-            $transaction->source = 'add_money_from_super_admin';
-            $transaction->note = $request->note ?? 'Add money from DBMBL';
-            $transaction->save();
+                PointTransaction::create([
+                    'user_id'      => $user->id,
+                    'type'         => 'earn',
+                    'points'       => 0,
+                    'bonus_amount' => $amount,
+                    'bonus_status' => 'credit',
+                    'source'       => 'add_money_from_super_admin',
+                    'note'         => $request->note,
+                ]);
 
-            // Update user designation
-            $user->wallet_balance = ($user->wallet_balance ?? 0) + $request->amount;
-            $user->save();
-
-            DB::commit();
+                return [
+                    'user_id'     => $user->id,
+                    'amount'      => $amount,
+                    'designation' => $user->designation,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Money added successfully.',
-                'data' => [
-                    'user_id' => $user->id,
-                    'amount' => $transaction->bonus_amount,
-                    'designation' => $user->designation,
-                ]
+                'data'    => $result
             ], 200);
 
-        } catch (Exception $e) {
-
-            DB::rollBack();
-
-            \Log::error('Add Money Error', [
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
+        } catch (\Exception $e) {
+            Log::error('Add Money Failed', [
+                'admin_id' => $adminId,
+                'user_id'  => $user_id,
+                'amount'   => $amount,
+                'message'  => $e->getMessage(),
+                'line'     => $e->getLine(),
+                'file'     => $e->getFile(),
             ]);
 
             return response()->json([
                 'success' => false,
+                'message' => 'Something went wrong. Please try again.',
+            ], 500);
+        }
+    }
+
+    public function deductMoney(Request $request, $user_id)
+    {
+        $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'note'   => ['required', 'string', 'max:255'],
+        ]);
+
+        $adminId = Auth::id();
+
+        if (!$adminId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.'
+            ], 401);
+        }
+
+        if ((int)$user_id === (int)$adminId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot deduct money from your own account.'
+            ], 422);
+        }
+
+        $amount = (float) $request->amount;
+
+        try {
+            $result = DB::transaction(function () use ($user_id, $adminId, $amount, $request) {
+
+                $targetUser = User::where('id', $user_id)->lockForUpdate()->firstOrFail();
+                $adminUser  = User::where('id', $adminId)->lockForUpdate()->firstOrFail();
+
+                // Ledger-based balance
+                $currentBalance = (float) PointTransaction::where('user_id', $targetUser->id)
+                    ->selectRaw("
+                        COALESCE(SUM(CASE WHEN bonus_status = 'credit' THEN bonus_amount ELSE 0 END), 0) -
+                        COALESCE(SUM(CASE WHEN bonus_status = 'debit'  THEN bonus_amount ELSE 0 END), 0) as balance
+                    ")
+                    ->value('balance') ?? 0;
+
+                if ($currentBalance < $amount) {
+                    throw new \InvalidArgumentException('Insufficient wallet balance.');
+                }
+
+                PointTransaction::create([
+                    'user_id'      => $targetUser->id,
+                    'type'         => 'spend',
+                    'points'       => 0,
+                    'bonus_amount' => $amount,
+                    'bonus_status' => 'debit',
+                    'source'       => 'deducted_by_admin',
+                    'note'         => $request->note,
+                ]);
+
+                PointTransaction::create([
+                    'user_id'      => $adminUser->id,
+                    'type'         => 'earn',
+                    'points'       => 0,
+                    'bonus_amount' => $amount,
+                    'bonus_status' => 'credit',
+                    'source'       => 'deducted_from_user',
+                    'note'         => "Received {$amount} from '{$targetUser->name}' (ID: {$targetUser->id})",
+                ]);
+
+                return [
+                    'target_user_id'      => $targetUser->id,
+                    'target_user_balance' => round($currentBalance - $amount, 2),
+                    'admin_user_id'       => $adminUser->id,
+                    'amount'              => $amount,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Money deducted successfully.',
+                'data'    => $result
+            ], 200);
+
+        } catch (\InvalidArgumentException $e) {
+            // Business logic error → 422
+            return response()->json([
+                'success' => false,
                 'message' => $e->getMessage(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            // Unexpected error → 500
+            Log::error('Deduct Money Failed', [
+                'admin_id' => $adminId,
+                'user_id'  => $user_id,
+                'amount'   => $amount,
+                'message'  => $e->getMessage(),
+                'line'     => $e->getLine(),
+                'file'     => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong. Please try again.',
             ], 500);
         }
     }

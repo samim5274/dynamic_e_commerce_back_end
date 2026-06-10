@@ -46,4 +46,41 @@ class AccountController extends Controller
             ], 500);
         }
     }
+
+    public function adminStatement()
+    {
+        try {
+            $pointTransactions = PointTransaction::with(['user', 'referenceUser'])
+                ->latest()
+                ->paginate(50);
+
+            if ($pointTransactions->total() === 0) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => 'No transactions found.',
+                    'data'    => [],
+                ], 200);
+            }
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Transactions retrieved successfully.',
+                'data'    => $pointTransactions->items(),
+                'current_page' => $pointTransactions->currentPage(),
+                'last_page'    => $pointTransactions->lastPage(),
+                'total'        => $pointTransactions->total(),
+                'per_page'     => $pointTransactions->perPage(),
+                'from'         => $pointTransactions->firstItem(),
+                'to'           => $pointTransactions->lastItem(),
+            ], 200);
+
+        } catch (Exception $e) {
+            Log::error("Point Fetch Error: " . $e->getMessage());
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong while fetching transactions.',
+            ], 500);
+        }
+    }
 }

@@ -211,6 +211,7 @@ use App\Http\Controllers\Payment\AccountController;
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('account')->group(function () {
         Route::get('/', [AccountController::class, 'index']);
+        Route::get('/admin/statement', [AccountController::class, 'adminStatement']);
     });
 });
 

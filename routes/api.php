@@ -105,7 +105,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/create', [ProductController::class, 'store']);
         Route::get('/', [ProductController::class, 'index']);
 
-
         Route::get('/get-categories', [ProductController::class, 'getCategory']);
         Route::get('/get-subcategories', [ProductController::class, 'getSubCategory']);
         Route::get('/get-brands', [ProductController::class, 'getBrand']);

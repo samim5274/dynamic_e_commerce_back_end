@@ -35,7 +35,6 @@ class ProductCategory extends Model
     }
 
     // Relationships
-
     public function subcategories()
     {
         return $this->hasMany(SubCategory::class)->where('is_active', true)->orderBy('sort_order', 'asc');

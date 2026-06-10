@@ -109,6 +109,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/get-subcategories', [ProductController::class, 'getSubCategory']);
         Route::get('/get-brands', [ProductController::class, 'getBrand']);
 
+        Route::post('/create-brand', [ProductController::class, 'storeBrand']);
+        Route::delete('/delete-brand/{id}', [ProductController::class, 'deleteBrand']);
+
         // Product sale report Route
         Route::get('/report', [ProductController::class, 'reportSale']);
 

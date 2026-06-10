@@ -91,6 +91,37 @@ class ProductController extends Controller
         }
     }
 
+    public function storeBrand(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:brands,name'
+        ]);
+
+        $brand = Brand::create([
+            'name' => $request->name,
+            'slug' => Str::slug($request->name),
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Brand created successfully.',
+            'data' => $brand
+        ]);
+    }
+
+    public function deleteBrand($id)
+    {
+        $brand = Brand::findOrFail($id);
+
+        $brand->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Brand deleted successfully.'
+        ]);
+    }
+
     public function store(StoreProductRequest $request){
 
         $user = auth('sanctum')->user();

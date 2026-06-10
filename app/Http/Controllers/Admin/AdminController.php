@@ -255,6 +255,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'note' => ['required', 'string', 'max:255'],
         ]);
 
         try {
@@ -265,12 +266,12 @@ class AdminController extends Controller
             // Create transaction
             $transaction = new PointTransaction();
             $transaction->user_id = $user->id;
-            $transaction->type = 'spend';
+            $transaction->type = 'earn';
             $transaction->points = 0;
             $transaction->bonus_amount = $request->amount;
             $transaction->bonus_status = 'credit';
             $transaction->source = 'add_money_from_super_admin';
-            $transaction->note = 'Add money from DBMBL';
+            $transaction->note = $request->note ?? 'Add money from DBMBL';
             $transaction->save();
 
             // Update user designation

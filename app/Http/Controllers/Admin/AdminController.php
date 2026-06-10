@@ -33,7 +33,24 @@ class AdminController extends Controller
     {
         try {
 
-            $data = User::where('role', '!=', 'super_admin')->get();
+            $data = User::query()
+                ->where('role', '!=', 'super_admin')
+                ->withSum([
+                    'pointTransactions as total_credit' => function ($q) {
+                        $q->where('bonus_status', 'credit');
+                    }
+                ], 'bonus_amount')
+                ->withSum([
+                    'pointTransactions as total_debit' => function ($q) {
+                        $q->where('bonus_status', 'debit');
+                    }
+                ], 'bonus_amount')
+                ->get()
+                ->map(function ($user) {
+                    $user->wallet_balance = round(($user->total_credit ?? 0) - ($user->total_debit ?? 0), 2);
+                    unset($user->total_credit, $user->total_debit);
+                    return $user;
+                });
 
             return response()->json([
                 'success' => true,

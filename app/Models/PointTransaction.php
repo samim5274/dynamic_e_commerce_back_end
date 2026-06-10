@@ -20,4 +20,8 @@ class PointTransaction extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function referenceUser(){
+        return $this->belongsTo(User::class, 'reference_id');
+    }
 }

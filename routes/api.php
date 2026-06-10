@@ -285,6 +285,7 @@ use App\Http\Controllers\Notice\NoticeController;
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('notice')->group(function () {
         Route::get('/', [NoticeController::class, 'index']);
+        Route::get('/user', [NoticeController::class, 'userNotice']);
         Route::post('/create', [NoticeController::class, 'create']);
         // Route::get('/view/{file}', [NoticeController::class, 'attachView']);
         Route::delete('/delete/{id}', [NoticeController::class, 'delete']);

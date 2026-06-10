@@ -26,7 +26,30 @@ class NoticeController extends Controller
     {
         try {
             $notice = Notice::with('user')
-                ->whereDate('publish_date', '<=', now()->toDateString())
+                // ->whereDate('publish_date', '<=', now()->toDateString())
+                ->where('is_active', true)
+                ->orderBy('id', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notice fetched successfully.',
+                'data' => $notice,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch orders. Please try again later.',
+            ], 500);
+        }
+    }
+
+    public function userNotice()
+    {
+        try {
+            $notice = Notice::with('user')
+                ->whereDate('publish_date', '<=', Carbon::today())
                 ->where('is_active', true)
                 ->orderBy('id', 'desc')
                 ->get();

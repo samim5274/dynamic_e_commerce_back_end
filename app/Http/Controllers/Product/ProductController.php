@@ -101,29 +101,59 @@ class ProductController extends Controller
             'name' => 'required|string|max:255|unique:brands,name'
         ]);
 
-        $brand = Brand::create([
-            'name' => $request->name,
-            'slug' => Str::slug($request->name),
-            'is_active' => true,
-        ]);
+        try {
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Brand created successfully.',
-            'data' => $brand
-        ]);
+            $brand = Brand::create([
+                'name' => trim($request->name),
+                'slug' => Str::slug($request->name),
+                'is_active' => true,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Brand created successfully.',
+                'data' => $brand
+            ], 201);
+
+        } catch (\Exception $e) {
+
+            Log::error('Brand Store Error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error'
+            ], 500);
+        }
     }
 
     public function deleteBrand($id)
     {
-        $brand = Brand::findOrFail($id);
+        try {
 
-        $brand->delete();
+            $brand = Brand::findOrFail($id);
+            $brand->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Brand deleted successfully.'
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Brand deleted successfully.'
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Brand not found.'
+            ], 404);
+
+        } catch (\Exception $e) {
+
+            Log::error('Brand Delete Error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error'
+            ], 500);
+        }
     }
 
     public function editBrand(Request $request, $id)
@@ -182,23 +212,16 @@ class ProductController extends Controller
 
     public function storeCategory(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $request->validate([
             'name' => 'required|string|max:255|unique:product_categories,name',
-            'is_active' => 'nullable|boolean',
+            'is_active' => 'boolean'
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
+
             $category = ProductCategory::create([
-                'name'      => trim($request->name),
-                'slug'      => Str::slug($request->name),
+                'name' => trim($request->name),
+                'slug' => Str::slug($request->name),
                 'is_active' => $request->is_active ?? true,
             ]);
 
@@ -207,13 +230,14 @@ class ProductController extends Controller
                 'message' => 'Category created successfully.',
                 'data' => $category
             ], 201);
+
         } catch (\Exception $e) {
-            \Log::error('Category Create Error', [
-                'error' => $e->getMessage()
-            ]);
+
+            Log::error('Category Store Error', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Something went wrong while creating category.'
+                'message' => 'Server error'
             ], 500);
         }
     }
@@ -283,9 +307,17 @@ class ProductController extends Controller
 
         try {
 
+            $slug = Str::slug($request->name);
+
+            $exists = ProductSubCategory::where('slug', $slug)->exists();
+
+            if ($exists) {
+                $slug .= '-' . time();
+            }
+
             $sub = ProductSubCategory::create([
-                'name' => $request->name,
-                'slug' => Str::slug($request->name),
+                'name' => trim($request->name),
+                'slug' => $slug,
                 'category_id' => $request->category_id,
                 'is_active' => $request->is_active ?? true,
             ]);
@@ -294,11 +326,11 @@ class ProductController extends Controller
                 'success' => true,
                 'message' => 'Sub Category created successfully.',
                 'data' => $sub
-            ]);
+            ], 201);
 
         } catch (\Exception $e) {
 
-            \Log::error($e->getMessage());
+            Log::error('SubCategory Store Error', ['error' => $e->getMessage()]);
 
             return response()->json([
                 'success' => false,

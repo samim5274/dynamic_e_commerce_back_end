@@ -227,6 +227,49 @@ class ProductController extends Controller
         ]);
     }
 
+    public function editCategory(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255|unique:product_categories,name,' . $id,
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $category = ProductCategory::findOrFail($id);
+            $category->update([
+                'name'      => trim($request->name),
+                'slug'      => Str::slug($request->name),
+                'is_active' => $request->is_active ?? true,
+            ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Category updated successfully.',
+                'data' => $category
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Category not found.'
+            ], 404);
+        } catch (\Exception $e) {
+            \Log::error('Category Update Error', [
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while updating category.'
+            ], 500);
+        }
+    }
+
     public function store(StoreProductRequest $request){
 
         $user = auth('sanctum')->user();

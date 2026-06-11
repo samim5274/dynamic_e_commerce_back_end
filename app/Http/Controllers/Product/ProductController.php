@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -120,6 +121,57 @@ class ProductController extends Controller
             'success' => true,
             'message' => 'Brand deleted successfully.'
         ]);
+    }
+
+    public function editBrand(Request $request, $id)
+    {
+        $request->validate([
+            'name' => ['required','string','max:255',Rule::unique('brands', 'name')->ignore($id),],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $brand = Brand::findOrFail($id);
+
+            $brand->update([
+                'name'      => trim($request->name),
+                'slug'      => Str::slug($request->name),
+                'is_active' => $request->is_active,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Brand updated successfully.',
+                'data'    => $brand->fresh(),
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Brand not found.',
+            ], 404);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            Log::error('Brand Update Error', [
+                'brand_id' => $id,
+                'error'    => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update brand.',
+            ], 500);
+        }
     }
 
     public function store(StoreProductRequest $request){

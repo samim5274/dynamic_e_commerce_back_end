@@ -126,7 +126,10 @@ class ProductController extends Controller
     public function editBrand(Request $request, $id)
     {
         $request->validate([
-            'name' => ['required','string','max:255',Rule::unique('brands', 'name')->ignore($id),],
+            'name' => [
+                'required','string','max:255',
+                Rule::unique('brands', 'name')->ignore($id)
+            ],
             'is_active' => ['required', 'boolean'],
         ]);
 

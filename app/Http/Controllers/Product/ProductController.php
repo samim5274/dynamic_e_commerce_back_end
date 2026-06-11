@@ -92,6 +92,9 @@ class ProductController extends Controller
         }
     }
 
+
+
+
     public function storeBrand(Request $request)
     {
         $request->validate([
@@ -269,6 +272,56 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    public function storeSubCategory(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:product_categories,id',
+            'is_active' => 'boolean'
+        ]);
+
+        try {
+
+            $sub = ProductSubCategory::create([
+                'name' => $request->name,
+                'slug' => Str::slug($request->name),
+                'category_id' => $request->category_id,
+                'is_active' => $request->is_active ?? true,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sub Category created successfully.',
+                'data' => $sub
+            ]);
+
+        } catch (\Exception $e) {
+
+            \Log::error($e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error'
+            ], 500);
+        }
+    }
+
+    public function deleteSubCategory($id)
+    {
+        $subCategory = ProductSubCategory::findOrFail($id);
+
+        $subCategory->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sub-Category deleted successfully.'
+        ]);
+    }
+
+
+
+
 
     public function store(StoreProductRequest $request){
 

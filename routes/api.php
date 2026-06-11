@@ -117,6 +117,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/delete-category/{id}', [ProductController::class, 'deleteCategory']);
         Route::put('/edit-category/{id}', [ProductController::class, 'editCategory']);
 
+        Route::post('/create-sub-category', [ProductController::class, 'storeSubCategory']);
+        Route::delete('/delete-sub-category/{id}', [ProductController::class, 'deleteSubCategory']);
+
         // Product sale report Route
         Route::get('/report', [ProductController::class, 'reportSale']);
 

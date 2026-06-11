@@ -319,6 +319,59 @@ class ProductController extends Controller
         ]);
     }
 
+    public function editSubCategory(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:product_categories,id',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+
+            $subCategory = ProductSubCategory::findOrFail($id);
+
+            $subCategory->update([
+                'name'       => trim($request->name),
+                'slug'       => Str::slug($request->name),
+                'category_id'=> $request->category_id,
+                'is_active'  => $request->is_active ?? true,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sub Category updated successfully.',
+                'data' => $subCategory
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Sub Category not found.'
+            ], 404);
+
+        } catch (\Exception $e) {
+
+            \Log::error('SubCategory Update Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ], 500);
+        }
+    }
+
 
 
 

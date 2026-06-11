@@ -113,6 +113,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/delete-brand/{id}', [ProductController::class, 'deleteBrand']);
         Route::put('/edit-brand/{id}', [ProductController::class, 'editBrand']);
 
+        Route::post('/create-category', [ProductController::class, 'storeCategory']);
+        Route::delete('/delete-category/{id}', [ProductController::class, 'deleteCategory']);
+
         // Product sale report Route
         Route::get('/report', [ProductController::class, 'reportSale']);
 

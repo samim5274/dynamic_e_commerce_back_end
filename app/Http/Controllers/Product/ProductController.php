@@ -177,6 +177,56 @@ class ProductController extends Controller
         }
     }
 
+    public function storeCategory(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255|unique:product_categories,name',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $category = ProductCategory::create([
+                'name'      => trim($request->name),
+                'slug'      => Str::slug($request->name),
+                'is_active' => $request->is_active ?? true,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Category created successfully.',
+                'data' => $category
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Category Create Error', [
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while creating category.'
+            ], 500);
+        }
+    }
+
+    public function deleteCategory($id)
+    {
+        $category = ProductCategory::findOrFail($id);
+
+        $category->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Category deleted successfully.'
+        ]);
+    }
+
     public function store(StoreProductRequest $request){
 
         $user = auth('sanctum')->user();

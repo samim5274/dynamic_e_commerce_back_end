@@ -72,6 +72,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/root', [ProfileController::class, 'getRootUsers']);
         Route::post('/create', [ProfileController::class, 'createUser']);
         Route::post('/assign-tree', [ProfileController::class, 'assignTree']);
+        Route::get('/get-ranking-users', [ProfileController::class, 'getRankingUsers']);
     });
 });
 

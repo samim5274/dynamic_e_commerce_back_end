@@ -378,7 +378,7 @@ class ProfileController extends Controller
 
         try {
             return DB::transaction(function () use ($request, $validated, $pointService, &$photoPath) {
-                
+
                 // Find refer user
                 $referUser = User::where('user_id', $validated['refer_id'])->firstOrFail();
 
@@ -419,7 +419,7 @@ class ProfileController extends Controller
 
         } catch (Exception $e) {
             if ($photoPath) Storage::disk('public')->delete($photoPath);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -441,7 +441,7 @@ class ProfileController extends Controller
         if ($position === 'left' && $rootUser->left_child_id) {
             throw new Exception('The left position is already occupied.');
         }
-        
+
         if ($position === 'right' && $rootUser->right_child_id) {
             throw new Exception('The right position is already occupied.');
         }
@@ -460,7 +460,7 @@ class ProfileController extends Controller
         } else {
             $rootUser->right_child_id = $user->id;
         }
-        
+
         $rootUser->save();
     }
 
@@ -563,14 +563,14 @@ class ProfileController extends Controller
     private function isDescendant($rootUser, $user)
     {
         $currentRoot = $rootUser;
-        
+
         while ($currentRoot && $currentRoot->parent_id) {
             if ($currentRoot->parent_id == $user->id) {
                 return true;
             }
             $currentRoot = User::find($currentRoot->parent_id);
         }
-        
+
         return false;
     }
 
@@ -707,6 +707,44 @@ class ProfileController extends Controller
         }
 
         return $order;
+    }
+
+    public function getRankingUsers(){
+        try {
+
+            $data = User::query()
+                ->where('role', '!=', 'super_admin')
+                ->withSum([
+                    'pointTransactions as total_credit' => function ($q) {
+                        $q->where('bonus_status', 'credit');
+                    }
+                ], 'bonus_amount')
+                ->withSum([
+                    'pointTransactions as total_debit' => function ($q) {
+                        $q->where('bonus_status', 'debit');
+                    }
+                ], 'bonus_amount')
+                ->get()
+                ->map(function ($user) {
+                    $user->wallet_balance = round(($user->total_credit ?? 0) - ($user->total_debit ?? 0), 2);
+                    unset($user->total_credit, $user->total_debit);
+                    return $user;
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Users data fetched successfully.',
+                'data' => $data,
+            ], 200);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while fetching users data.',
+                'error'   => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
 }

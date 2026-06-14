@@ -310,10 +310,13 @@ class OrderController extends Controller
         try{
             $orders = Order::with('user')->latest()->paginate(20);
 
+            $totalAmount = Order::sum('amount');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Orders fetched successfully.',
                 'data' => $orders,
+                'total_amount' => (float) $totalAmount,
             ], 200);
         } catch (\Throwable $e) {
             return response()->json([
@@ -329,13 +332,17 @@ class OrderController extends Controller
             'start_date' => 'nullable|date|date_format:Y-m-d',
             'end_date'   => 'nullable|date|date_format:Y-m-d|after_or_equal:start_date',
         ]);
-        
+
         try{
-            $orders = Order::with('user:id,user_id,name,email')
-                ->whereBetween('date', [
-                    $request->start_date ?? now()->startOfDay()->toDateString(),
-                    $request->end_date ?? now()->endOfDay()->toDateString()
-                ])
+
+            $startDate = $request->start_date ?? now()->startOfDay()->toDateString();
+            $endDate   = $request->end_date ?? now()->endOfDay()->toDateString();
+
+            $query = Order::whereBetween('date', [$startDate, $endDate]);
+
+            $totalAmount = (clone $query)->sum('amount');
+
+            $orders = $query->with('user:id,user_id,name,email')
                 ->latest()
                 ->paginate(20);
 
@@ -343,9 +350,10 @@ class OrderController extends Controller
                 'success' => true,
                 'message' => 'Orders fetched successfully.',
                 'data'    => $orders,
+                'total_amount' => (float) $totalAmount,
             ], 200);
         } catch (\Throwable $e) {
-            
+
 
             return response()->json([
                 'success' => false,

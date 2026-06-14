@@ -13,7 +13,7 @@ class PointTransaction extends Model
         'user_id',
         'type', 'points', 'matching_count',
         'bonus_amount', 'bonus_status',
-        'source', 'reference_id', 'note'
+        'source','rank' ,'reference_id', 'note'
     ];
 
     protected $casts = [

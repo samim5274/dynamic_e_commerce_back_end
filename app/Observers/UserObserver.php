@@ -75,7 +75,7 @@ class UserObserver
 
                 $bonusExists = PointTransaction::where('user_id', $user->id)
                     ->where('source', 'rank_bonus')
-                    ->where('note', 'like', "%Rank: {$newRank}%")
+                    ->where('note', 'like', "RANK_BONUS|{$newRank}|%")
                     ->exists();
 
                 if (!$bonusExists) {
@@ -89,13 +89,16 @@ class UserObserver
                         'bonus_status'   => 'credit',
                         'source'         => 'rank_bonus',
                         'reference_id'   => null,
-                        'note'           => "Rank Reward Cash Bonus for achieving Rank: {$newRank}",
+                        'rank'           => $newRank,
+                        'note'           => "RANK_BONUS|{$newRank}|{$cashBonus}",
                     ]);
 
                     // ২. ইউজারের মেইন ওয়ালেটে টাকা রিফ্লেক্ট করা
-                    $user->wallet_balance += $cashBonus;
+                    $user->increment('wallet_balance', $cashBonus);
                 }
             }
+
+            $user->save();
         }
 
         /*

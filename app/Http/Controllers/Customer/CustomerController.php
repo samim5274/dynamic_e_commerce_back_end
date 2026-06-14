@@ -918,7 +918,7 @@ class CustomerController extends Controller
                 ->where('status', 'pending')
                 ->sum('amount');
 
-            $withdraw = Transaction::where('user_id', $userId)
+            $totalWithdraw = Transaction::where('user_id', $userId)
                 ->where('status', 'paid')
                 ->sum('net_amount');
 
@@ -956,6 +956,7 @@ class CustomerController extends Controller
                     'bonus'          => (float) $wallet->bonus,
                     'matching'       => (float) $wallet->matching,
                     'withdraw'       => (float) $wallet->withdraw,
+                    'totalWithdraw'  => (float) $totalWithdraw,
                     'refund'         => (float) $wallet->refund,
 
                     'pending'        => (float) $pending,

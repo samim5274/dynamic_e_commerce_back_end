@@ -18,7 +18,7 @@ class UserObserver
         |--------------------------------------------------------------------------
         */
 
-        // 1. Rank Condition 
+        // 1. Rank Condition
         $left  = $user->left_total_point ?? 0;
         $right = $user->right_total_point ?? 0;
 
@@ -66,20 +66,20 @@ class UserObserver
 
         // র্যাঙ্ক যদি পরিবর্তন হয় (আগের চেয়ে আপগ্রেড হয়)
         if ($user->rank !== $newRank) {
-            
+
             $oldRank = $user->rank;
             $user->rank = $newRank;
 
             // ব্রোঞ্জ বা কোনো বোনাস না থাকলে স্কিপ করবে
             if ($cashBonus > 0 && $newRank !== "Bronze") {
-                
+
                 $bonusExists = PointTransaction::where('user_id', $user->id)
                     ->where('source', 'rank_bonus')
                     ->where('note', 'like', "%Rank: {$newRank}%")
                     ->exists();
 
                 if (!$bonusExists) {
-                    
+
                     // ১. লেজার ডিস্ট্রিবিউশন লগ ইনসার্ট
                     PointTransaction::create([
                         'user_id'        => $user->id,
@@ -108,7 +108,7 @@ class UserObserver
             ->whereMonth('created_at', Carbon::now()->month)
             ->whereYear('created_at', Carbon::now()->year)
             ->sum('points');
-        
+
         /*
         |--------------------------------------------------------------------------
         | 3. Active Condition
@@ -116,13 +116,13 @@ class UserObserver
         |
         | Rule:
         | - Total point must be >= 100
-        | - Current month purchase must be >= 50
+        | - Current month purchase must be >= 100
         |
         */
         if (is_null($user->is_active)) {
             $user->is_active = (
                 $total >= 100 &&
-                $monthlyPurchase >= 50
+                $monthlyPurchase >= 100
             ) ? 1 : 0;
         }
 

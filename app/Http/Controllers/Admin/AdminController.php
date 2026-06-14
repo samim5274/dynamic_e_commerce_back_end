@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+
 use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
@@ -304,6 +306,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'source' => ['required', Rule::in([ 'bank_transfer', 'rank_bonus', 'gift', 'add_money', ]),],
             'note'   => ['required', 'string', 'max:255'],
         ]);
 
@@ -336,7 +339,7 @@ class AdminController extends Controller
                     'points'       => 0,
                     'bonus_amount' => $amount,
                     'bonus_status' => 'credit',
-                    'source'       => 'add_money_from_super_admin',
+                    'source'       => $request->source,
                     'note'         => $request->note,
                 ]);
 

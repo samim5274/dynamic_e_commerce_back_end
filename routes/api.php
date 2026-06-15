@@ -224,6 +224,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('account')->group(function () {
         Route::get('/', [AccountController::class, 'index']);
         Route::get('/admin/statement', [AccountController::class, 'adminStatement']);
+        Route::get('/admin/star/club', [AccountController::class, 'StarClubStatement']);
+        Route::get('/admin/dynamic/club', [AccountController::class, 'DynamicClubStatement']);
     });
 });
 

@@ -104,12 +104,16 @@ class AdminController extends Controller
     public function starClubUsers()
     {
         try {
+            $currentMonth = now()->format('Y-m');
 
-            $starUsers = Cache::remember("star_club_users_global", 60, function () {
+            $starUsers = Cache::remember("star_club_users_global_" . now()->format('Y-m'), 60, function () use ($currentMonth) {
                 return User::query()
-                    ->whereNull('designation')
                     ->withCount('referrals')
                     ->has('referrals', '>=', 10) // ডাটাবেস লেভলেই ১০ বা তার বেশি রেফারাল ফিল্টার করবে
+                    ->whereDoesntHave('pointTransactions', function ($q) use ($currentMonth) {
+                        $q->where('source', 'star_club')
+                        ->where('month', $currentMonth);
+                    })
                     ->orderByDesc('referrals_count') // ডাটাবেস থেকেই সর্ট হয়ে আসবে
                     ->get();
             });
@@ -152,6 +156,8 @@ class AdminController extends Controller
 
                 $user = User::where('id', $user_id)->lockForUpdate()->firstOrFail();
 
+                $currentMonth = now()->format('Y-m');
+
                 PointTransaction::create([
                     'user_id'      => $user->id,
                     'type'         => 'bonus',
@@ -159,6 +165,7 @@ class AdminController extends Controller
                     'bonus_amount' => $amount,
                     'bonus_status' => 'credit',
                     'source'       => 'star_club',
+                    'month'        => $currentMonth,
                     'note'         => 'Star Club bonus amount added',
                 ]);
 
@@ -198,24 +205,28 @@ class AdminController extends Controller
     public function dynamicClubUsers()
     {
         try {
+            $currentMonth = now()->format('Y-m');
 
-            $starUsers = Cache::remember("dynamic_star_users", 60, function () {
+            $starUsers = Cache::remember("dynamic_star_users_" . $currentMonth, 60, function () use ($currentMonth) {
                 return User::query()
                     ->select('users.*')
-                    // ১. মূল ইউজারের ডেজিগনেশন 'star club' হতে হবে
+
                     ->where('designation', 'star_club')
 
-                    // ২. শুধুমাত্র সেই স্টার ক্লাব রেফারালগুলো কাউন্ট হবে যাদের ডেজিগনেশনও 'star club'
+
                     ->withCount(['referrals as star_referrals_count' => function ($q) {
                         $q->where('designation', 'star_club');
                     }])
 
-                    // ৩. ডাটাবেস লেভেলেই ফিল্টার: এমন ইউজার যাদের এই নির্দিষ্ট রেফারাল সংখ্যা ১০ বা তার বেশি
                     ->whereHas('referrals', function ($q) {
                         $q->where('designation', 'star_club');
                     }, '>=', 10)
 
-                    // ৪. ডাটাবেস থেকেই বড় থেকে ছোট ক্রমানুসারে সাজিয়ে আনা
+                    ->whereDoesntHave('pointTransactions', function ($q) use ($currentMonth) {
+                        $q->where('source', 'star_club')
+                        ->where('month', $currentMonth);
+                    })
+
                     ->orderByDesc('star_referrals_count')
                     ->get();
             });
@@ -224,7 +235,7 @@ class AdminController extends Controller
                 'success' => true,
                 'message' => 'Dynamic users fetched successfully.',
                 'data' => $starUsers,
-                'count_refer' => $starUsers->count(), // মোট কতজন এমন ডাইনামিক ইউজার পাওয়া গেল
+                'count_refer' => $starUsers->count(),
             ]);
 
         } catch (Exception $e) {
@@ -259,6 +270,8 @@ class AdminController extends Controller
 
                 $user = User::where('id', $user_id)->lockForUpdate()->firstOrFail();
 
+                $currentMonth = now()->format('Y-m');
+
                 PointTransaction::create([
                     'user_id'      => $user->id,
                     'type'         => 'bonus',
@@ -266,6 +279,7 @@ class AdminController extends Controller
                     'bonus_amount' => $amount,
                     'bonus_status' => 'credit',
                     'source'       => 'dynamic_club',
+                    'month'        => $currentMonth,
                     'note'         => 'Dynamic Club bonus amount added',
                 ]);
 

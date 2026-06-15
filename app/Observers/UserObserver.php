@@ -75,6 +75,7 @@ class UserObserver
 
                 $bonusExists = PointTransaction::where('user_id', $user->id)
                     ->where('source', 'rank_bonus')
+                    ->where('rank', $newRank)
                     ->where('note', 'like', "RANK_BONUS|{$newRank}|%")
                     ->exists();
 

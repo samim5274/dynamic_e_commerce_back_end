@@ -12,12 +12,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('backup:mail')
-        //     ->dailyAt('00:00')
-        //     ->withoutOverlapping()
-        //     ->runInBackground();
         $schedule->command('backup:mail')
-            ->everyMinute();
+            ->dailyAt('00:00')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**

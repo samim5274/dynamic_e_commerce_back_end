@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use App\Jobs\UpdateLastLoginJob;
+use Exception;
 
 use App\Models\User;
 use App\Mail\OTPMail;
@@ -29,7 +30,7 @@ class AuthController extends Controller
 {
     public function getReferUser($referCode)
     {
-        try 
+        try
         {
             $user = User::select(['id','name','user_id','email'])
                 ->where('user_id', $referCode)
@@ -125,7 +126,7 @@ class AuthController extends Controller
 
         try {
             return DB::transaction(function () use ($request, $validated, $pointService, &$photoPath) {
-                
+
                 // Find refer user
                 $referUser = User::where('user_id', $validated['refer_id'])->firstOrFail();
 
@@ -166,7 +167,7 @@ class AuthController extends Controller
 
         } catch (Exception $e) {
             if ($photoPath) Storage::disk('public')->delete($photoPath);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -188,7 +189,7 @@ class AuthController extends Controller
         if ($position === 'left' && $rootUser->left_child_id) {
             throw new Exception('The left position is already occupied.');
         }
-        
+
         if ($position === 'right' && $rootUser->right_child_id) {
             throw new Exception('The right position is already occupied.');
         }
@@ -207,7 +208,7 @@ class AuthController extends Controller
         } else {
             $rootUser->right_child_id = $user->id;
         }
-        
+
         $rootUser->save();
     }
 
@@ -596,7 +597,7 @@ class AuthController extends Controller
                 'image'    => $user->image,
                 'role'     => $user->role,
             ],
-            
+
         ], 200);
     }
 

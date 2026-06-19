@@ -5,6 +5,9 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Models\User;
 use App\Observers\UserObserver;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Http\Request;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,5 +27,21 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         User::observe(UserObserver::class);
+
+        RateLimiter::for('login', function (Request $request) {
+
+            $email = strtolower((string) $request->input('email', ''));
+
+            $device = sha1(
+                $request->ip() .
+                substr((string) $request->userAgent(), 0, 100)
+            );
+
+            return [
+                Limit::perMinute(5)->by('ip:' . $request->ip()),
+                Limit::perMinute(3)->by('email:' . $email),
+                Limit::perMinute(1)->by('device:' . $device),
+            ];
+        });
     }
 }

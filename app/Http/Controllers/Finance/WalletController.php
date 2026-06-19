@@ -43,8 +43,8 @@ class WalletController extends Controller
             // Debit calculation
             $debit = PointTransaction::where('user_id', $userId)
                 ->where('bonus_status', 'debit')
-                ->sum('bonus_amount'); 
-                
+                ->sum('bonus_amount');
+
             // Final balance
             $balance = $credit - $debit;
 
@@ -171,7 +171,7 @@ class WalletController extends Controller
                         SUM(CASE WHEN bonus_status = 'debit' THEN bonus_amount ELSE 0 END) AS balance
                     ")
                     ->first();
-                
+
                 $currentBalance = $balanceData->balance ?? 0;
 
                 if ($currentBalance < $validated['amount']) {
@@ -179,7 +179,7 @@ class WalletController extends Controller
                 }
 
                 $amount = (float) $validated['amount'];
-                $charge = round($amount * 0.10, 2); 
+                $charge = round($amount * 0.10, 2);
                 $netAmount = $amount - $charge;
 
                 // CREATE WITHDRAW REQUEST (PENDING)
@@ -290,7 +290,7 @@ class WalletController extends Controller
 
                 // ৩. OTP ভেরিফিকেশন
                 if (!password_verify($validated['otp'], $otpRecord->otp)) {
-                    // ঐচ্ছিক: এখানে আপনি attempts++ করতে পারেন। 
+                    // ঐচ্ছিক: এখানে আপনি attempts++ করতে পারেন।
                     // আপাতত আপনার রিকোয়ারমেন্ট অনুযায়ী সরাসরি রোলব্যাক করা হচ্ছে।
                     return $this->handleFailedOtp($transaction, $user, $otpRecord, 'Invalid OTP provided');
                 }
@@ -308,7 +308,7 @@ class WalletController extends Controller
                     'message' => 'Withdrawal verified successfully and is now under review.'
                 ]);
             });
-          
+
         } catch (\Exception $e) {
             Log::error("OTP Verification Error: " . $e->getMessage());
             return response()->json(['status' => false, 'message' => 'Verification failed.'], 500);
@@ -424,7 +424,7 @@ class WalletController extends Controller
     {
         try {
 
-            $transaction = Transaction::with('user')
+            $transaction = Transaction::with('user:id,name,email')
                 ->where('transaction_id', $transaction_id)
                 ->where('user_id', $user_id)
                 ->first();

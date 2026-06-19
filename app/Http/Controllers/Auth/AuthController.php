@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -507,6 +508,20 @@ class AuthController extends Controller
         // Normalize email
         $email = Str::lower(trim($validated['email']));
 
+        // =======================
+        $value = $request->input('website_field_9xk2');
+
+        if (!empty($value)) {
+            Log::channel('security')->warning('Bot detected (honeypot)', [
+                'ip' => $request->ip(),
+                'value' => $value,
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            abort(403);
+        }
+        // =======================
+
         // 2) Rate limit keys (email + ip)
         $emailKey = 'login:email:' . sha1($email);
         $ipKey    = 'login:ip:' . $request->ip();
@@ -523,6 +538,15 @@ class AuthController extends Controller
                 RateLimiter::availableIn($emailKey),
                 RateLimiter::availableIn($ipKey)
             );
+            // =======================
+            if (RateLimiter::availableIn($emailKey) >= 59) {
+                Log::critical('Possible brute force attack', [
+                    'email' => $email,
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            }
+            // =======================
 
             return response()->json([
                 'success' => false,
@@ -542,6 +566,13 @@ class AuthController extends Controller
 
             RateLimiter::hit($emailKey, 60); // 1 min
             RateLimiter::hit($ipKey, 300);
+            // =======================
+            Log::warning('Failed login attempt', [
+                'email' => $email,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+            // =======================
 
             return response()->json([
                 'success' => false,
@@ -551,6 +582,14 @@ class AuthController extends Controller
 
         // Optional: block/inactive check (if you have this column)
         if (! $user->is_active) {
+            // =======================
+            Log::warning('Disabled account login attempt', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'ip' => $request->ip(),
+            ]);
+            // =======================
+
             return response()->json([
                 'success' => false,
                 'message' => 'Your account is disabled.',
@@ -578,10 +617,24 @@ class AuthController extends Controller
         // Optional: revoke old tokens (single-device login)
         // $user->tokens()->delete();
 
+        // =======================
+        $abilities = [$user->role];
+        // =======================
+
 
         // 6) Create token with abilities
         $deviceName = Str::limit($request->userAgent() ?? 'unknown-device', 100);
-        $token = $user->createToken($deviceName,['*'],now()->addDays(30))->plainTextToken;
+        // ======================= $abilities
+        $token = $user->createToken($deviceName,$abilities,now()->addDays(30))->plainTextToken;
+
+        // =======================
+        Log::info('User login successful', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+        // =======================
 
         return response()->json([
             'success' => true,

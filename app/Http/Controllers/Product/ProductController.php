@@ -560,9 +560,22 @@ class ProductController extends Controller
                 'subcategory:id,name',
                 'brand:id,name',
                 'variants:id,product_id,color,size,price,stock_quantity,discount_price',
-                'images:id,product_id,image_path,is_primary,sort_order'
+                'images:id,product_id,image_path,is_primary'
             ])
             ->where('slug', $slug)->firstOrFail();
+
+            $categoryProducts = Product::with([
+                'category:id,name',
+                'subcategory:id,name',
+                'brand:id,name',
+                'variants:id,product_id,color,size,price,stock_quantity,discount_price',
+                'images:id,product_id,image_path,is_primary'
+            ])
+            ->where('id', '!=', $product->id)
+            ->where('category_id', $product->category_id)
+            ->latest()
+            ->take(5)
+            ->get();
 
             // Transform images (VERY IMPORTANT for live server)
             $product->images->transform(function ($image) {
@@ -573,7 +586,8 @@ class ProductController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Product fetched successfully.',
-                'data' => $product
+                'data' => $product,
+                'category_products' => $categoryProducts
             ], 200);
         } catch (ModelNotFoundException $e) {
 

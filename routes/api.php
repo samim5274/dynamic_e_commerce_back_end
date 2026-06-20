@@ -205,7 +205,7 @@ Route::prefix('public')->group(function () {
     Route::get('/get-categories', [ProductController::class, 'getCategory']);
     Route::get('/get-subcategories', [ProductController::class, 'getSubCategory']);
     Route::get('/get-brands', [ProductController::class, 'getBrand']);
-    Route::get('/{slug}', [ProductController::class, 'show'])->where('slug', '[a-zA-Z0-9\-]+');
+    Route::get('/product/{slug}', [ProductController::class, 'show'])->where('slug', '[a-zA-Z0-9\-]+');
 });
 
 use App\Http\Controllers\Ecommerce\CartController;

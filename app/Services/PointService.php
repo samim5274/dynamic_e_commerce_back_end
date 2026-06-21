@@ -14,28 +14,28 @@ class PointService
     public function referralBonus($user, $orderReg, $orderPoint)
     {
         DB::transaction(function () use ($user, $orderReg, $orderPoint) {
-            
+
             $referrerId = $user->referrer_id ?? ($user->referrer ? $user->referrer->id : null);
 
             if (!$referrerId) {
                 Log::warning("Referral system: No referrer found for user ID - " . $user->id);
-                return; 
+                return;
             }
 
             $referrer = User::lockForUpdate()->find($referrerId);
             if (!$referrer) return;
 
             if ($referrer) {
-                
+
                 $exists = PointTransaction::where('user_id', $referrer->id)
                     ->where('source', 'referral')
                     ->where('reference_id', (string)$orderReg)
                     ->exists();
-                    
-                if ($exists) return; 
+
+                if ($exists) return;
 
                 // 1 point = 2 bonus
-                $bonusAmount = (int)$orderPoint * 2;
+                $bonusAmount = (int)$orderPoint * 1;
 
                 // optional safety check
                 if ($bonusAmount <= 0) return;
@@ -43,7 +43,7 @@ class PointService
                 PointTransaction::create([
                     'user_id'      => $referrer->id,
                     'type'         => 'bonus',
-                    'points'       => 0, 
+                    'points'       => 0,
                     'bonus_amount' => $bonusAmount,
                     'bonus_status' => 'credit',
                     'source'       => 'referral',
@@ -211,7 +211,7 @@ class PointService
     // 7. Distribute order point
     public function distributeOrderPoints(User $user, $points, $orderReg)
     {
-        DB::transaction(function () use ($user, $points, $orderReg) 
+        DB::transaction(function () use ($user, $points, $orderReg)
         {
             $user = User::lockForUpdate()->find($user->id);
             $user->increment('own_total_point', $points);

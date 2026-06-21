@@ -27,40 +27,40 @@ class UserObserver
 
         // ইমেজ প্ল্যান অনুযায়ী র্যাঙ্ক এবং ক্যাশ বোনাস ম্যাপিং
         if ($left >= 50000000 && $right >= 50000000) {
-            $newRank = "Crown Diamond";
+            $newRank = "PROJECT DIRECTOR (PD)";
             $cashBonus = 2500000; // 2.5-Core (25 Lakh)
         } elseif ($left >= 20000000 && $right >= 20000000) {
-            $newRank = "Royal Diamond";
+            $newRank = "EXECUTIVE DIRECTOR (ED)";
             $cashBonus = 10000000; // 1-Core (1 Crore)
         } elseif ($left >= 10000000 && $right >= 10000000) {
-            $newRank = "Elite Diamond";
+            $newRank = "GENERAL MANAGER (GM)";
             $cashBonus = 5000000; // 50 Lakh
         } elseif ($left >= 5000000 && $right >= 5000000) {
-            $newRank = "Black Diamond";
+            $newRank = "ASSISTANT GENERAL MANAGER (AGM)";
             $cashBonus = 2500000; // 25 Lakh
         } elseif ($left >= 2000000 && $right >= 2000000) {
-            $newRank = "Red Diamond";
+            $newRank = "ZONAL MANAGER (ZM)";
             $cashBonus = 1000000; // 10 Lakh
         } elseif ($left >= 1000000 && $right >= 1000000) {
-            $newRank = "Purple Diamond";
+            $newRank = "REGIONAL MANAGER (RM)";
             $cashBonus = 500000;  // 5 Lakh
         } elseif ($left >= 500000 && $right >= 500000) {
-            $newRank = "Green Diamond";
+            $newRank = "EXECUTIVE MANAGER (EM)";
             $cashBonus = 250000;  // 2.5 Lakh
         } elseif ($left >= 200000 && $right >= 200000) {
-            $newRank = "Blue Diamond";
+            $newRank = "EXECUTIVE OFFICER (EO)";
             $cashBonus = 100000;  // 1 Lakh
         } elseif ($left >= 100000 && $right >= 100000) {
-            $newRank = "Diamond";
+            $newRank = "MARKETING MANAGER (MM)";
             $cashBonus = 50000;   // 50,000 Tk
         } elseif ($left >= 50000 && $right >= 50000) {
-            $newRank = "Platinum";
+            $newRank = "SALES MANAGER (SM)";
             $cashBonus = 25000;   // 25,000 Tk
         } elseif ($left >= 20000 && $right >= 20000) {
-            $newRank = "Gold";
+            $newRank = "MARKETING OFFICER (MO)";
             $cashBonus = 10000;   // 10,000 Tk
         } elseif ($left >= 10000 && $right >= 10000) {
-            $newRank = "Silver";
+            $newRank = "SALES OFFICER (SO)";
             $cashBonus = 5000;    // 5000 Tk
         }
 

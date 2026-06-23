@@ -148,8 +148,8 @@ class WalletController extends Controller
             'payment_method'        => ['required', 'in:bank,mobile'],
 
             // Bank fields (conditional validation better below)
-            'bank_name'             => ['required', 'string', 'required_if:payment_method,bank'],
-            'account_holder_name'   => ['required', 'string', 'required_if:payment_method,bank'],
+            'bank_name'             => ['required_if:payment_method,bank', 'string'],
+            'account_holder_name'   => ['required_if:payment_method,bank', 'string'],
             'account_number'        => ['required', 'string', 'max:50'],
             'routing_number'        => ['nullable', 'string', 'max:20'],
             'branch_name'           => ['nullable', 'string', 'max:100'],
@@ -157,6 +157,16 @@ class WalletController extends Controller
         ]);
 
         $user = auth()->user();
+
+        if (!now()->between(
+            now()->startOfMonth(),
+            now()->startOfMonth()->copy()->addDays(2)
+        )) {
+            return response()->json([
+                'status'    => false,
+                'message'   => 'Withdraw allowed only on 1st–3rd of each month.'
+            ], 403);
+        }
 
         try {
             return DB::transaction(function () use ($validated, $user, $request) {
@@ -250,7 +260,7 @@ class WalletController extends Controller
 
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage()
+                'message' => 'Something went wrong. Please try again later.',
             ], 500);
         }
     }

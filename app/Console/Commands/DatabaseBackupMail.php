@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Mail;
 
 class DatabaseBackupMail extends Command
 {
-    
+
     protected $signature = 'backup:mail';
     protected $description = 'DB backup zip with password and send mail';
 
@@ -55,7 +55,9 @@ class DatabaseBackupMail extends Command
 
             exec($zip, $zout, $zreturn);
 
-            unlink($sqlPath);
+            if (file_exists($sqlPath)) {
+                unlink($sqlPath);
+            }
 
             if ($zreturn !== 0 || !file_exists($zipPath)) {
                 throw new \Exception("ZIP creation failed");
@@ -77,7 +79,9 @@ class DatabaseBackupMail extends Command
             $this->info("Backup sent successfully!");
 
             // optional cleanup
-            unlink($zipPath);
+            if (file_exists($zipPath)) {
+                unlink($zipPath);
+            }
 
         } catch (\Throwable $e) {
             $this->error("Backup failed: " . $e->getMessage());

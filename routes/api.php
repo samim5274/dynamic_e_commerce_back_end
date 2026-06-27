@@ -323,9 +323,11 @@ Route::middleware('auth:sanctum')->group(function () {
 // Slider Routes
 // ======================
 use App\Http\Controllers\Ecommerce\SliderController;
-Route::prefix('slider')->group(function () {
-    Route::get('/', [SliderController::class, 'index']);
-    Route::post('/create', [SliderController::class, 'store']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('slider')->group(function () {
+        Route::get('/', [SliderController::class, 'index']);
+        Route::post('/create', [SliderController::class, 'store']);
+    });
 });
 
 

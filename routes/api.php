@@ -326,10 +326,13 @@ use App\Http\Controllers\Ecommerce\SliderController;
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('slider')->group(function () {
         Route::get('/', [SliderController::class, 'index']);
-        Route::get('/public', [SliderController::class, 'show']);
         Route::post('/create', [SliderController::class, 'store']);
         Route::delete('/delete/{id}', [SliderController::class, 'delete']);
     });
+});
+
+Route::prefix('slider')->group(function () {
+    Route::get('/public', [SliderController::class, 'show']);
 });
 
 

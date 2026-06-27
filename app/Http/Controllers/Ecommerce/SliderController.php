@@ -45,6 +45,33 @@ class SliderController extends Controller
         }
     }
 
+    public function show()
+    {
+        try {
+
+            $data = Slider::latest()->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sliders fetched successfully.',
+                'data' => SliderResource::collection($data),
+            ], 200);
+
+        } catch (\Throwable $e) {
+
+            Log::error('Slider fetch failed.', [
+                'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong.',
+            ], 500);
+        }
+    }
+
     public function store(SliderRequest $request)
     {
         try {

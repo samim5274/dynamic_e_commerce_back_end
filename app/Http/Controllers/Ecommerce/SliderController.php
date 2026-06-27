@@ -128,10 +128,46 @@ class SliderController extends Controller
         return $image->storeAs('sliders', $filename, 'public');
     }
 
-    // private function storeSliderImage(UploadedFile $image): string
-    // {
-    //     $filename = 'slider_' . now()->format('YmdHis') . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+    public function delete($id)
+    {
+        try {
 
-    //     return $image->storeAs('sliders', $filename, 'public');
-    // }
+            DB::transaction(function () use ($id) {
+
+                $slider = Slider::find($id);
+
+                if (! $slider) {
+                    abort(404, 'Slider not found.');
+                }
+
+                // Delete image if exists
+                if ($slider->image && Storage::disk('public')->exists($slider->image)) {
+                    Storage::disk('public')->delete($slider->image);
+                }
+
+                // Delete record
+                $slider->delete();
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Slider deleted successfully.',
+            ], 200);
+
+        } catch (\Throwable $e) {
+
+            Log::error('Slider delete failed.', [
+                'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => config('app.debug')
+                    ? $e->getMessage()
+                    : 'Something went wrong.',
+            ], 500);
+        }
+    }
 }

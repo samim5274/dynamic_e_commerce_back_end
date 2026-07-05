@@ -158,13 +158,14 @@ class WalletController extends Controller
 
         $user = auth()->user();
 
-        if (!now()->between(
-            now()->startOfMonth(),
-            now()->startOfMonth()->copy()->addDays(2)
-        )) {
+        $today = now();
+        $start = $today->copy()->startOfMonth();
+        $end = $today->copy()->startOfMonth()->addDays(6)->endOfDay();
+
+        if (!$today->between($start, $end)) {
             return response()->json([
-                'status'    => false,
-                'message'   => 'Withdraw allowed only on 1st–3rd of each month.'
+                'status' => false,
+                'message' => 'Withdraw allowed only on 1st–3rd of each month.'
             ], 403);
         }
 

@@ -350,6 +350,7 @@ use App\Http\Controllers\Report\ReportController;
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('reports')->group(function () {
         Route::get('/point-statement', [ ReportController::class, 'pointStatement']);
+        Route::get('/point-statement/filter', [ ReportController::class, 'pointStatementFilter']);
     });
 });
 

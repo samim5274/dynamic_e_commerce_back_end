@@ -34,4 +34,37 @@ class ReportController extends Controller
             ], 500);
         }
     }
+
+    public function pointStatementFilter(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'nullable|date|date_format:Y-m-d',
+            'end_date'   => 'nullable|date|date_format:Y-m-d|after_or_equal:start_date',
+        ]);
+
+        try{
+            $startDate = $request->start_date ?? now()->startOfDay()->toDateString();
+            $endDate   = $request->end_date ?? now()->endOfDay()->toDateString();
+
+            $query = PointTransaction::whereBetween('created_at', [$startDate, $endDate]);
+
+            $totalPoint = (clone $query)->sum('points');
+
+            $points = $query->with('user:id,user_id,name,email')
+                ->latest()
+                ->paginate(20);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Points Report fetched successfully.',
+                'data' => $points,
+                'total_point' => (float) $totalPoint,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch points. Please try again later.',
+            ], 500);
+        }
+    }
 }

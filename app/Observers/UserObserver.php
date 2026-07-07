@@ -18,14 +18,12 @@ class UserObserver
         |--------------------------------------------------------------------------
         */
 
-        // 1. Rank Condition
         $left  = $user->left_total_point ?? 0;
         $right = $user->right_total_point ?? 0;
 
         $newRank = "Bronze";
         $cashBonus = 0;
 
-        // ইমেজ প্ল্যান অনুযায়ী র্যাঙ্ক এবং ক্যাশ বোনাস ম্যাপিং
         if ($left >= 50000000 && $right >= 50000000) {
             $newRank = "PROJECT DIRECTOR (PD)";
             $cashBonus = 2500000; // 2.5-Core (25 Lakh)
@@ -64,13 +62,12 @@ class UserObserver
             $cashBonus = 5000;    // 5000 Tk
         }
 
-        // র্যাঙ্ক যদি পরিবর্তন হয় (আগের চেয়ে আপগ্রেড হয়)
+        // Rank Calculation...
         if ($user->rank !== $newRank) {
 
             $oldRank = $user->rank;
             $user->rank = $newRank;
 
-            // ব্রোঞ্জ বা কোনো বোনাস না থাকলে স্কিপ করবে
             if ($cashBonus > 0 && $newRank !== "Bronze") {
 
                 $bonusExists = PointTransaction::where('user_id', $user->id)
@@ -81,7 +78,6 @@ class UserObserver
 
                 if (!$bonusExists) {
 
-                    // ১. লেজার ডিস্ট্রিবিউশন লগ ইনসার্ট
                     PointTransaction::create([
                         'user_id'        => $user->id,
                         'type'           => 'bonus',
@@ -94,7 +90,6 @@ class UserObserver
                         'note'           => "RANK_BONUS|{$newRank}|{$cashBonus}",
                     ]);
 
-                    // ২. ইউজারের মেইন ওয়ালেটে টাকা রিফ্লেক্ট করা
                     $user->increment('wallet_balance', $cashBonus);
                 }
             }
@@ -107,11 +102,11 @@ class UserObserver
         | 2. Monthly Purchase Check
         |--------------------------------------------------------------------------
         */
-        $monthlyPurchase = PointTransaction::where('user_id', $user->id)
-            ->where('source', 'purchase')
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->whereYear('created_at', Carbon::now()->year)
-            ->sum('points');
+        // $monthlyPurchase = PointTransaction::where('user_id', $user->id)
+        //     ->where('source', 'purchase')
+        //     ->whereMonth('created_at', Carbon::now()->month)
+        //     ->whereYear('created_at', Carbon::now()->year)
+        //     ->sum('points');
 
         /*
         |--------------------------------------------------------------------------
@@ -123,22 +118,17 @@ class UserObserver
         | - Current month purchase must be >= 100
         |
         */
-        if (is_null($user->is_active)) {
-            $user->is_active = (
-                $total >= 100 &&
-                $monthlyPurchase >= 100
-            ) ? 1 : 0;
-        }
+        // $user->is_active = (
+        //     $total >= 100 &&
+        //     $monthlyPurchase >= 100
+        // ) ? 1 : 0;
 
         /*
         |--------------------------------------------------------------------------
         | 4. Match Condition
         |--------------------------------------------------------------------------
         */
-        $user->is_match = (
-            $user->left_child_id &&
-            $user->right_child_id
-        ) ? true : false;
+        $user->is_match = ( $user->left_child_id && $user->right_child_id ) ? true : false;
 
 
         /*

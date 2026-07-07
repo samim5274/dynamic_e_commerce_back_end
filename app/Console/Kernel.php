@@ -12,10 +12,14 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('backup:mail')
-            ->dailyAt('00:00')
-            ->withoutOverlapping()
-            ->runInBackground();
+        $schedule->command('users:update-active-status')
+            ->cron('30 23 28-31 * *')
+            ->when(function () {
+                return now()->isLastOfMonth();
+            })
+            ->withoutOverlapping();
+
+        $schedule->command('backup:mail')->dailyAt('00:00')->withoutOverlapping()->runInBackground();
     }
 
     /**

@@ -60,6 +60,9 @@ php artisan view:clear
 php artisan route:clear
 php artisan config:cache
 
+// if schedule added
+composer dump-autoload
+
 // front end change hole
 php artisan view:clear
 php artisan route:clear

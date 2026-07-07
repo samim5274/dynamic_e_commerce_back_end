@@ -344,6 +344,21 @@ Route::prefix('slider')->group(function () {
 
 
 // ======================
+// Report Controller
+// ======================
+use App\Http\Controllers\Report\ReportController;
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('reports')->group(function () {
+        Route::get('/point-statement', [ ReportController::class, 'pointStatement']);
+    });
+});
+
+
+
+
+
+
+// ======================
 // Super Admin Routes
 // ======================
 use App\Http\Controllers\Admin\AdminController;

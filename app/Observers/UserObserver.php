@@ -21,7 +21,7 @@ class UserObserver
         $left  = $user->left_total_point ?? 0;
         $right = $user->right_total_point ?? 0;
 
-        $newRank = "Member";
+        $newRank = "Customer";
         $cashBonus = 0;
 
         if ($left >= 50000000 && $right >= 50000000) {
@@ -68,7 +68,7 @@ class UserObserver
             $oldRank = $user->rank;
             $user->rank = $newRank;
 
-            if ($cashBonus > 0 && $newRank !== "Member") {
+            if ($cashBonus > 0 && $newRank !== "Customer") {
 
                 $bonusExists = PointTransaction::where('user_id', $user->id)
                     ->where('source', 'rank_bonus')

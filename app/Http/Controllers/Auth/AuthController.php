@@ -838,13 +838,13 @@ class AuthController extends Controller
     public function getProducts()
     {
         try {
-            $products = Product::where('point', '>=', 100)
+            $products = Product::where('point', '>=', 1)
                     ->latest()
                     ->get();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Fetched all 100 points products',
+                'message' => 'Fetched all 1 points products',
                 'data' => $products,
             ]);
         } catch (\Exception $e) {

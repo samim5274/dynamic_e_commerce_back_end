@@ -14,7 +14,8 @@ class UpdateUserActiveStatus extends Command
 
     public function handle()
     {
-        User::chunk(100, function ($users) {
+        User::whereNotIn('role', ['admin', 'super_admin'])
+            ->chunk(100, function ($users) {
 
             foreach ($users as $user) {
 
